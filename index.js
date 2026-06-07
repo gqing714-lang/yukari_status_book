@@ -1,11 +1,13 @@
+/*
+ * 虚见相 · 文游横条状态栏
+ * - 悬浮图标可拖拽，关脚本自动清理
+ * - 点击图标展开/收起状态模块
+ * - 红色地点时间条与黑色台词框左对齐
+ * - 右侧单箭头展开详细状态；详情区在台词框下方，但层级更高
+ * - 自动读取最新 <status>...</status>
+ */
 (function () {
-  const SCRIPT_KEY = '__YUKARI_VISUAL_NOVEL_BAR__';
-
-  if (window[SCRIPT_KEY]?.cleanup) {
-    try {
-      window[SCRIPT_KEY].cleanup();
-    } catch (e) {}
-  }
+  console.log('YUKARI VN STATUS: start');
 
   let doc = document;
   let win = window;
@@ -28,30 +30,24 @@
   const STORAGE_KEY = 'yukari-vn-status-position';
   const ICON_URL = 'https://files.catbox.moe/bv172s.png';
 
+  const FALLBACK = {
+    place: '万事屋',
+    time: '12:30',
+    name: '虚见相',
+    moodValue: 100,
+    moodLabel: '高兴',
+    outfit: '白襦袢、黑羽织，袖口沾着一点旧纸灰。',
+    action: '倚在柜台后看账册，指尖慢慢翻过泛黄的纸页，偶尔抬眼看向门口，像是在等某个本不该来的客人。',
+    mainTitle: '神隐少女事件',
+    mainSummary: '雨夜来访的少女许下“想要消失”的愿望，代价尚未明晰，虚见相似乎并不意外。',
+    todos: ['调查愿望代价', '准备茶点', '观察user状态'],
+    quotes: ['真是的……又露出这种表情。', '不过我很喜欢哦…'],
+  };
+
   const state = {
-    data: {
-      place: '万事屋',
-      time: '12:30',
-      name: '虚见相',
-      moodValue: 100,
-      outfit: '白襦袢、黑羽织，袖口沾着一点旧纸灰。',
-      action: '倚在柜台后看账册，指尖慢慢翻过泛黄的纸页，偶尔抬眼看向门口，像是在等某个本不该来的客人。',
-      mainTitle: '神隐少女事件',
-      mainSummary: '雨夜来访的少女许下“想要消失”的愿望，代价尚未明晰，虚见相似乎并不意外。',
-      todos: ['调查愿望代价', '准备茶点', '观察user状态'],
-      quotes: ['真是的……又露出这种表情。', '不过我很喜欢哦…'],
-    },
+    data: { ...FALLBACK },
     quoteIndex: 0,
-    typingTimer: null,
-    typingFullText: '',
-    typingCurrent: '',
-    typingDone: true,
-    dragging: false,
-    moved: false,
-    startX: 0,
-    startY: 0,
-    startLeft: 0,
-    startTop: 0,
+    typeTimer: null,
     updateTimer: null,
     observer: null,
     listeners: [],
@@ -68,24 +64,17 @@
     return [...new Set(docs)];
   }
 
-  function addListener(target, type, handler, options) {
-    target.addEventListener(type, handler, options);
-    state.listeners.push({ target, type, handler, options });
-  }
-
   function cleanup() {
     clearTimeout(state.updateTimer);
-    clearInterval(state.typingTimer);
+    clearInterval(state.typeTimer);
 
     if (state.observer) {
       try { state.observer.disconnect(); } catch (e) {}
       state.observer = null;
     }
 
-    for (const item of state.listeners) {
-      try {
-        item.target.removeEventListener(item.type, item.handler, item.options);
-      } catch (e) {}
+    for (const off of state.listeners) {
+      try { off(); } catch (e) {}
     }
     state.listeners = [];
 
@@ -97,20 +86,34 @@
     }
   }
 
-  window[SCRIPT_KEY] = { cleanup };
+  cleanup();
 
-  function cleanText(text) {
-    return String(text ?? '')
-      .replace(/\r/g, '')
-      .replace(/\{\/\/.*?\}/g, '')
-      .trim();
-  }
-
-  function clamp(num, min, max) {
+  function clampNumber(num, min, max) {
     return Math.max(min, Math.min(max, num));
   }
 
-  function getLatestStatusBlock(text) {
+  function cleanLine(text) {
+    return String(text ?? '').replace(/\{\/\/.*?\}/g, '').trim();
+  }
+
+  function cleanBlock(text) {
+    return String(text ?? '')
+      .replace(/\r/g, '')
+      .replace(/\{\/\/.*?\}/g, '')
+      .replace(/[ \t]+$/gm, '')
+      .trim();
+  }
+
+  function moodFromValue(value) {
+    const n = Number(value);
+    if (Number.isNaN(n)) return '平静';
+    if (n >= 65) return '高兴';
+    if (n >= 35) return '平静';
+    if (n >= 15) return '低落';
+    return '危险';
+  }
+
+  function latestStatusBlock(text) {
     const raw = String(text ?? '');
     const matches = [...raw.matchAll(/<status\b[^>]*>([\s\S]*?)<\/status>/gi)];
     if (!matches.length) return '';
@@ -120,319 +123,142 @@
   function splitSections(block) {
     const keys = ['地点', '时间', '名字', '心情值', '穿着', '当前动作', '当前主线', '角色待办', '台词'];
     const sections = {};
-    keys.forEach(key => sections[key] = []);
+    keys.forEach(k => sections[k] = []);
 
     let current = null;
+    const lines = cleanBlock(block).split('\n').map(v => v.trim()).filter(Boolean);
 
-    cleanText(block).split('\n').forEach(rawLine => {
-      const line = rawLine.trim();
-      if (!line) return;
-
+    for (const line of lines) {
       const match = line.match(/^(地点|时间|名字|心情值|穿着|当前动作|当前主线|角色待办|台词)\s*[:：]\s*(.*)$/);
       if (match) {
         current = match[1];
-        const value = cleanText(match[2]);
+        const value = cleanLine(match[2]);
         if (value) sections[current].push(value);
       } else if (current) {
-        sections[current].push(cleanText(line));
+        sections[current].push(cleanLine(line));
       }
-    });
-
+    }
     return sections;
   }
 
   function parseTodos(raw) {
     const items = String(raw ?? '')
       .split('\n')
-      .map(line => line.trim())
+      .map(v => v.trim())
       .filter(Boolean)
-      .map(line => line.replace(/^\d+\s*[.．、]\s*/, '').replace(/^[-•◇◆]\s*/, '').trim())
+      .map(v => v.replace(/^\d+\s*[.．、]\s*/, '').replace(/^[-•◇◆]\s*/, '').trim())
       .filter(Boolean);
-
-    return items.length ? items : ['暂无待办'];
+    return items.length ? items : [...FALLBACK.todos];
   }
 
   function parseMain(raw) {
-    const text = cleanText(raw);
-    if (!text) return { title: '未启封', summary: '尚未读取到当前主线。' };
+    const text = String(raw ?? '').trim();
+    if (!text) {
+      return { title: FALLBACK.mainTitle, summary: FALLBACK.mainSummary };
+    }
 
     if (text.includes('|')) {
       const [title, ...rest] = text.split('|');
       return {
-        title: cleanText(title) || '未命名主线',
-        summary: cleanText(rest.join('|')) || '暂无梗概。',
+        title: title.trim() || FALLBACK.mainTitle,
+        summary: rest.join('|').trim() || FALLBACK.mainSummary,
       };
     }
 
     const lines = text.split('\n').map(v => v.trim()).filter(Boolean);
     return {
-      title: lines[0] || '未命名主线',
-      summary: lines.slice(1).join('\n') || '暂无梗概。',
+      title: lines[0] || FALLBACK.mainTitle,
+      summary: lines.slice(1).join('\n') || FALLBACK.mainSummary,
     };
   }
 
   function parseQuotes(raw, moodValue) {
-    const lines = String(raw ?? '')
-      .split('\n')
-      .map(line => line.trim())
-      .filter(Boolean);
-
-    const mood = Number(moodValue) >= 65 ? '高兴' : Number(moodValue) <= 30 ? '低落' : '平静';
-    const items = [];
+    const lines = String(raw ?? '').split('\n').map(v => v.trim()).filter(Boolean);
+    const parsed = [];
 
     for (const line of lines) {
       const match = line.match(/^([^：:]{1,12})\s*[:：]\s*(.+)$/);
       if (match) {
-        items.push({
-          mood: cleanText(match[1]),
-          text: cleanText(match[2]),
-        });
-      } else if (items.length) {
-        items[items.length - 1].text += '\n' + cleanText(line);
+        parsed.push({ mood: match[1].trim(), text: match[2].trim() });
+      } else if (parsed.length) {
+        parsed[parsed.length - 1].text += '\n' + line;
       }
     }
 
-    if (!items.length) return ['……'];
+    if (!parsed.length) return { mood: moodFromValue(moodValue), quotes: [...FALLBACK.quotes] };
 
-    const matched = items.filter(item => item.mood.includes(mood) || mood.includes(item.mood));
-    return (matched.length ? matched : items).map(item => item.text).filter(Boolean);
+    const mood = moodFromValue(moodValue);
+    const matched = parsed.filter(item => item.mood.includes(mood) || mood.includes(item.mood));
+    const pool = matched.length ? matched : parsed;
+    return {
+      mood: pool[0]?.mood || mood,
+      quotes: pool.map(item => item.text).filter(Boolean),
+    };
   }
 
   function parseStatus(block) {
     const sections = splitSections(block);
-    const moodValue = clamp(Number((sections['心情值'][0] ?? '50').replace(/[^\d.-]/g, '')) || 50, 0, 100);
+    const moodValue = clampNumber(Number((sections['心情值'][0] || '100').replace(/[^\d.-]/g, '')) || 100, 0, 100);
     const main = parseMain(sections['当前主线'].join('\n'));
+    const quoteResult = parseQuotes(sections['台词'].join('\n'), moodValue);
 
     return {
-      place: sections['地点'][0] || '未知之地',
-      time: sections['时间'][0] || '--:--',
-      name: sections['名字'][0] || '虚见相',
+      place: sections['地点'][0] || FALLBACK.place,
+      time: sections['时间'][0] || FALLBACK.time,
+      name: sections['名字'][0] || FALLBACK.name,
       moodValue,
-      outfit: sections['穿着'].join('\n').trim() || '未记录',
-      action: sections['当前动作'].join('\n').trim() || '未记录',
+      moodLabel: quoteResult.mood || moodFromValue(moodValue),
+      outfit: sections['穿着'].join('\n').trim() || FALLBACK.outfit,
+      action: sections['当前动作'].join('\n').trim() || FALLBACK.action,
       mainTitle: main.title,
       mainSummary: main.summary,
       todos: parseTodos(sections['角色待办'].join('\n')),
-      quotes: parseQuotes(sections['台词'].join('\n'), moodValue),
+      quotes: quoteResult.quotes.length ? quoteResult.quotes : [...FALLBACK.quotes],
     };
   }
 
-  async function getLastMessageIdSafe() {
-    try {
-      if (typeof getLastMessageId === 'function') {
-        const id = Number(getLastMessageId());
-        if (!Number.isNaN(id)) return id;
-      }
-    } catch (e) {}
-
-    try {
-      if (typeof triggerSlash === 'function') {
-        const id = Number(await triggerSlash('/pass {{lastMessageId}}'));
-        if (!Number.isNaN(id)) return id;
-      }
-    } catch (e) {}
-
-    try {
-      const ctx = win.SillyTavern?.getContext?.();
-      if (Array.isArray(ctx?.chat)) return ctx.chat.length - 1;
-    } catch (e) {}
-
-    return 0;
-  }
-
-  async function findLatestStatus() {
-    try {
-      if (typeof getChatMessages === 'function') {
-        const lastId = await getLastMessageIdSafe();
-        const messages = await Promise.resolve(
-          getChatMessages(`0-${lastId}`, {
-            role: 'assistant',
-            hide_state: 'unhidden',
-            include_swipes: false,
-          })
-        );
-
-        if (Array.isArray(messages)) {
-          for (let i = messages.length - 1; i >= 0; i--) {
-            const block = getLatestStatusBlock(messages[i]?.message);
-            if (block) return block;
-          }
-        }
-      }
-    } catch (e) {}
-
-    try {
-      const ctx = win.SillyTavern?.getContext?.();
-      const chat = ctx?.chat;
-      if (Array.isArray(chat)) {
-        for (let i = chat.length - 1; i >= 0; i--) {
-          const msg = chat[i];
-          if (msg?.is_user) continue;
-          const block = getLatestStatusBlock(msg?.mes ?? msg?.message ?? '');
-          if (block) return block;
-        }
-      }
-    } catch (e) {}
-
-    try {
-      const nodes = [...doc.querySelectorAll('#chat .mes_text')].reverse();
-      for (const node of nodes) {
-        const block = getLatestStatusBlock(node.textContent || '');
-        if (block) return block;
-      }
-    } catch (e) {}
-
-    return '';
-  }
-
-  function hideStatusBlocksInChat() {
-    const nodes = doc.querySelectorAll('#chat .mes_text');
-
-    for (const node of nodes) {
-      try {
-        node.querySelectorAll?.('status').forEach(el => {
-          el.style.display = 'none';
-        });
-
-        const html = node.innerHTML || '';
-        if (!/(&lt;status|<status)/i.test(html)) continue;
-
-        const replaced = html
-          .replace(/<status\b[^>]*>[\s\S]*?<\/status>/gi, '<span style="display:none"></span>')
-          .replace(/&lt;status\b[\s\S]*?&gt;[\s\S]*?&lt;\/status&gt;/gi, '<span style="display:none"></span>');
-
-        if (replaced !== html) node.innerHTML = replaced;
-      } catch (e) {}
-    }
-  }
-
-  function setText(selector, value) {
-    const root = doc.getElementById(ROOT_ID);
-    const el = root?.querySelector(selector);
-    if (el) el.textContent = value ?? '';
-  }
-
-  function renderTodos(todos) {
-    const root = doc.getElementById(ROOT_ID);
-    const list = root?.querySelector('.todo-list');
-    if (!list) return;
-
-    list.innerHTML = '';
-    todos.forEach(item => {
-      const li = doc.createElement('li');
-      li.textContent = item;
-      list.appendChild(li);
-    });
-  }
-
-  function typeQuote(text) {
-    clearInterval(state.typingTimer);
-
-    const root = doc.getElementById(ROOT_ID);
-    const textEl = root?.querySelector('.voice-text');
-    if (!textEl) return;
-
-    state.typingFullText = text;
-    state.typingCurrent = '';
-    state.typingDone = false;
-    textEl.textContent = '「」';
-
-    let i = 0;
-    state.typingTimer = setInterval(() => {
-      i++;
-      state.typingCurrent = text.slice(0, i);
-      textEl.textContent = `「${state.typingCurrent}」`;
-
-      if (i >= text.length) {
-        clearInterval(state.typingTimer);
-        state.typingDone = true;
-      }
-    }, 38);
-  }
-
-  function renderData(data, shouldType = true) {
-    state.data = data;
-
-    setText('.place-text', data.place);
-    setText('.time-text', data.time);
-    setText('.name-text', data.name);
-    setText('.mood-number', String(data.moodValue));
-    setText('.outfit-text', data.outfit);
-    setText('.action-text', data.action);
-    setText('.main-title', data.mainTitle);
-    setText('.main-summary', data.mainSummary);
-
-    const moodFill = doc.getElementById(ROOT_ID)?.querySelector('.mood-fill');
-    if (moodFill) moodFill.style.width = `${clamp(data.moodValue, 0, 100)}%`;
-
-    renderTodos(data.todos);
-
-    state.quoteIndex = 0;
-    const quote = data.quotes?.[0] || '……';
-    if (shouldType) typeQuote(quote);
-    else setText('.voice-text', `「${quote}」`);
-  }
-
-  function nextQuote() {
-    const quotes = state.data.quotes || ['……'];
-
-    if (!state.typingDone) {
-      clearInterval(state.typingTimer);
-      state.typingDone = true;
-      setText('.voice-text', `「${state.typingFullText}」`);
-      return;
-    }
-
-    state.quoteIndex = (state.quoteIndex + 1) % quotes.length;
-    typeQuote(quotes[state.quoteIndex]);
-  }
-
-  async function updateFromLatestStatus() {
-    const block = await findLatestStatus();
-    if (block) {
-      renderData(parseStatus(block), true);
-    }
-    hideStatusBlocksInChat();
-  }
-
-  function scheduleUpdate(delay = 500) {
-    clearTimeout(state.updateTimer);
-    state.updateTimer = setTimeout(updateFromLatestStatus, delay);
-  }
-
-  function init() {
-    if (!doc.body || !doc.head) {
-      setTimeout(init, 100);
-      return;
-    }
-
-    cleanup();
+  function addStyle() {
+    if (doc.getElementById(STYLE_ID)) return;
 
     const style = doc.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
-      status {
-        display: none !important;
-      }
+      #chat status { display: none !important; }
 
       #${ROOT_ID} {
+        --icon-size: 112px;
+        --box-left: 72px;
+        --status-top: 10px;
+        --status-height: 36px;
+        --status-width: min(340px, calc(100vw - 112px));
+        --dialog-top: 52px;
+        --dialog-height: 96px;
+        --dialog-width: min(560px, calc(100vw - 96px));
+        --detail-top: 158px;
+        --radius: 7px;
+        --gold: #a78d57;
+        --black: #2b2a28;
+        --red: #97352e;
+        --cream: #ead8ad;
+
         position: fixed !important;
         left: 24px;
         top: 160px;
         z-index: 2147483647 !important;
-        width: 112px !important;
-        height: 112px !important;
+        width: var(--icon-size) !important;
+        height: var(--icon-size) !important;
         overflow: visible !important;
         pointer-events: none !important;
+        font-family: "CustomFont", "NanoOldSong-A", "LXGW WenKai", "Noto Serif SC", serif !important;
       }
 
-      #${ROOT_ID} * {
-        box-sizing: border-box !important;
-      }
+      #${ROOT_ID} * { box-sizing: border-box !important; }
 
-      #${ROOT_ID} .simple-icon {
-        width: 112px !important;
-        height: 112px !important;
+      #${ROOT_ID} .vn-icon {
+        position: relative !important;
+        z-index: 40 !important;
+        width: var(--icon-size) !important;
+        height: var(--icon-size) !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -443,13 +269,11 @@
         user-select: none !important;
         -webkit-user-select: none !important;
         touch-action: none !important;
-        position: relative !important;
-        z-index: 6 !important;
       }
 
-      #${ROOT_ID} .simple-icon img {
-        width: 112px !important;
-        height: 112px !important;
+      #${ROOT_ID} .vn-icon img {
+        width: var(--icon-size) !important;
+        height: var(--icon-size) !important;
         object-fit: contain !important;
         display: block !important;
         pointer-events: none !important;
@@ -457,249 +281,198 @@
         -webkit-user-drag: none !important;
       }
 
-      #${ROOT_ID} .vn-panel {
-        position: absolute !important;
-        left: 96px !important;
-        top: 50% !important;
-        width: min(560px, calc(100vw - 130px)) !important;
-        pointer-events: none !important;
+      #${ROOT_ID} .vn-status-bar,
+      #${ROOT_ID} .vn-dialog,
+      #${ROOT_ID} .vn-detail {
         opacity: 0 !important;
-        transform: translateY(-50%) translateX(-14px) scaleX(0.12) !important;
+        pointer-events: none !important;
         transform-origin: left center !important;
-        clip-path: inset(0 100% 0 0 round 4px) !important;
+        clip-path: inset(0 100% 0 0 round var(--radius)) !important;
         filter: blur(2px) !important;
         transition:
           opacity 0.22s ease,
           transform 0.30s cubic-bezier(.2,.9,.2,1),
           clip-path 0.34s cubic-bezier(.2,.9,.2,1),
           filter 0.22s ease !important;
-        font-family:
-          "CustomFont",
-          "NanoOldSong-A",
-          "LXGW WenKai",
-          "Noto Serif SC",
-          serif !important;
       }
 
-      #${ROOT_ID}.panel-open .vn-panel {
-        pointer-events: auto !important;
+      #${ROOT_ID}.panel-open .vn-status-bar,
+      #${ROOT_ID}.panel-open .vn-dialog,
+      #${ROOT_ID}.panel-open.detail-open .vn-detail {
         opacity: 1 !important;
-        transform: translateY(-50%) translateX(0) scaleX(1) !important;
-        clip-path: inset(0 0 0 0 round 4px) !important;
+        pointer-events: auto !important;
+        clip-path: inset(0 0 0 0 round var(--radius)) !important;
         filter: blur(0) !important;
       }
 
-      #${ROOT_ID} .top-row {
-        position: relative !important;
-        z-index: 3 !important;
-        display: flex !important;
-        align-items: stretch !important;
-        width: min(360px, 78%) !important;
-        min-height: 38px !important;
-        margin-left: 4px !important;
-        margin-bottom: 8px !important;
-        border: 3px solid #a78d57 !important;
-        border-radius: 5px !important;
-        background: #8c3028 !important;
-        box-shadow:
-          0 4px 12px rgba(0,0,0,.25),
-          inset 0 1px 0 rgba(255,255,255,.10) !important;
-      }
-
-      #${ROOT_ID} .place-time {
-        flex: 1 !important;
-        min-width: 0 !important;
+      #${ROOT_ID} .vn-status-bar {
+        position: absolute !important;
+        z-index: 20 !important;
+        left: var(--box-left) !important;
+        top: var(--status-top) !important;
+        width: var(--status-width) !important;
+        height: var(--status-height) !important;
+        padding: 0 8px 0 18px !important;
         display: flex !important;
         align-items: center !important;
-        gap: 8px !important;
-        padding: 7px 12px !important;
-        color: #ead9b7 !important;
-        white-space: nowrap !important;
+        gap: 10px !important;
+        border-radius: var(--radius) !important;
+        background: linear-gradient(180deg, #a23a31, var(--red)) !important;
+        border: 3px solid var(--gold) !important;
+        box-shadow: 0 6px 15px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.14) !important;
+        transform: translateX(-10px) scaleX(.18) !important;
+        color: #f0dfb8 !important;
       }
 
-      #${ROOT_ID} .place-text {
-        font-size: 15px !important;
-        font-weight: 800 !important;
-        letter-spacing: .12em !important;
+      #${ROOT_ID}.panel-open .vn-status-bar { transform: translateX(0) scaleX(1) !important; }
+
+      #${ROOT_ID} .vn-place {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
+        white-space: nowrap !important;
+        font-size: 15px !important;
+        font-weight: 800 !important;
+        letter-spacing: .10em !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,.30) !important;
       }
 
-      #${ROOT_ID} .time-text {
+      #${ROOT_ID} .vn-time {
+        flex: 0 0 auto !important;
         font-size: 11px !important;
-        font-weight: 500 !important;
-        letter-spacing: .08em !important;
-        color: rgba(234,217,183,.78) !important;
+        letter-spacing: .06em !important;
+        opacity: .82 !important;
       }
 
-      #${ROOT_ID} .bar-dot {
-        color: #a78d57 !important;
-        font-style: normal !important;
-      }
-
-      #${ROOT_ID} .detail-toggle {
-        width: 38px !important;
+      #${ROOT_ID} .vn-toggle {
+        flex: 0 0 auto !important;
+        width: 24px !important;
+        height: 24px !important;
+        padding: 0 !important;
         border: none !important;
-        border-left: 3px solid #a78d57 !important;
-        border-radius: 0 !important;
-        background: rgba(43,42,40,.92) !important;
-        color: #e8d6a8 !important;
-        font-size: 16px !important;
-        font-weight: 700 !important;
-        line-height: 1 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        pointer-events: auto !important;
+        background: transparent !important;
+        color: #ead8ad !important;
+        font-size: 17px !important;
+        line-height: 22px !important;
+        text-align: center !important;
         cursor: pointer !important;
+        pointer-events: auto !important;
+        transform: rotate(0deg) !important;
+        transition: transform .22s ease !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
         touch-action: manipulation !important;
       }
 
-      #${ROOT_ID} .detail-toggle span {
-        display: inline-block !important;
-        transform: rotate(-90deg) !important;
-        transition: transform .22s ease !important;
+      #${ROOT_ID}.detail-open .vn-toggle { transform: rotate(90deg) !important; }
+
+      #${ROOT_ID} .vn-dialog {
+        position: absolute !important;
+        z-index: 10 !important;
+        left: var(--box-left) !important;
+        top: var(--dialog-top) !important;
+        width: var(--dialog-width) !important;
+        min-height: var(--dialog-height) !important;
+        padding: 20px 24px 18px 82px !important;
+        border-radius: var(--radius) !important;
+        background: var(--black) !important;
+        border: 4px solid var(--gold) !important;
+        box-shadow: 0 12px 28px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.06) !important;
+        color: var(--cream) !important;
+        transform: translateX(-10px) scaleX(.12) !important;
+        cursor: pointer !important;
       }
 
-      #${ROOT_ID}.detail-open .detail-toggle span {
-        transform: rotate(0deg) !important;
-      }
+      #${ROOT_ID}.panel-open .vn-dialog { transform: translateX(0) scaleX(1) !important; }
 
-      #${ROOT_ID} .voice-box {
-        position: relative !important;
-        z-index: 1 !important;
-        width: 100% !important;
-        min-height: 106px !important;
-        padding: 18px 20px 18px !important;
-        background: #2b2a28 !important;
-        border: 4px solid #a78d57 !important;
-        border-radius: 5px !important;
-        box-shadow:
-          0 13px 28px rgba(0,0,0,.36),
-          inset 0 1px 0 rgba(255,255,255,.05) !important;
-        color: #ead9b7 !important;
-      }
-
-      #${ROOT_ID} .voice-text {
-        font-size: 16px !important;
-        line-height: 1.75 !important;
-        letter-spacing: .06em !important;
+      #${ROOT_ID} .vn-dialog-text {
+        font-size: 15px !important;
+        line-height: 1.65 !important;
+        letter-spacing: .04em !important;
         white-space: pre-wrap !important;
+        text-shadow: 0 1px 2px rgba(0,0,0,.28) !important;
       }
 
-      #${ROOT_ID} .voice-cursor {
+      #${ROOT_ID} .vn-cursor {
         display: inline-block !important;
         margin-left: 5px !important;
-        color: #a78d57 !important;
-        animation: yukariCursor 1.05s ease-in-out infinite !important;
+        color: var(--gold) !important;
+        animation: yukariVnCursor 1.05s ease-in-out infinite !important;
       }
 
-      #${ROOT_ID} .detail-layer {
+      #${ROOT_ID} .vn-detail {
         position: absolute !important;
-        z-index: 5 !important;
-        left: 4px !important;
-        top: 46px !important;
-        width: calc(100% - 8px) !important;
-        max-height: min(62vh, 420px) !important;
+        z-index: 30 !important;
+        left: var(--box-left) !important;
+        top: var(--detail-top) !important;
+        width: var(--dialog-width) !important;
+        max-height: min(48vh, 360px) !important;
         overflow: auto !important;
         overscroll-behavior: contain !important;
         -webkit-overflow-scrolling: touch !important;
-
-        opacity: 0 !important;
-        transform: translateY(-8px) scaleY(.72) !important;
-        transform-origin: top center !important;
-        pointer-events: none !important;
-        clip-path: inset(0 0 100% 0 round 4px) !important;
-        transition:
-          opacity .2s ease,
-          transform .24s cubic-bezier(.2,.9,.2,1),
-          clip-path .26s cubic-bezier(.2,.9,.2,1) !important;
+        padding: 12px !important;
+        border-radius: var(--radius) !important;
+        background: rgba(236, 220, 190, .98) !important;
+        border: 3px solid var(--gold) !important;
+        box-shadow: 0 14px 32px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.30) !important;
+        transform: translateY(-8px) !important;
+        color: #2d241f !important;
       }
 
-      #${ROOT_ID}.detail-open .detail-layer {
-        opacity: 1 !important;
-        transform: translateY(0) scaleY(1) !important;
-        pointer-events: auto !important;
-        clip-path: inset(0 0 0 0 round 4px) !important;
-      }
+      #${ROOT_ID}.panel-open.detail-open .vn-detail { transform: translateY(0) !important; }
 
-      #${ROOT_ID} .detail-card {
-        padding: 12px 13px 13px !important;
-        border: 3px solid #a78d57 !important;
-        border-radius: 5px !important;
-        background:
-          linear-gradient(180deg, rgba(236,221,194,.98), rgba(216,195,158,.98)) !important;
-        color: #2f261f !important;
-        box-shadow:
-          0 12px 26px rgba(0,0,0,.34),
-          inset 0 1px 0 rgba(255,255,255,.18) !important;
-      }
-
-      #${ROOT_ID} .name-row {
-        display: flex !important;
+      #${ROOT_ID} .mood-line {
+        display: grid !important;
+        grid-template-columns: auto 1fr auto !important;
         align-items: center !important;
-        justify-content: space-between !important;
-        gap: 12px !important;
-        padding-bottom: 8px !important;
-        border-bottom: 1px solid rgba(93,55,40,.26) !important;
-        margin-bottom: 9px !important;
+        gap: 9px !important;
+        margin-bottom: 10px !important;
       }
 
-      #${ROOT_ID} .name-text {
-        font-size: 15px !important;
+      #${ROOT_ID} .detail-label {
+        font-size: 11px !important;
         font-weight: 800 !important;
-        letter-spacing: .14em !important;
-        color: #3c2922 !important;
+        letter-spacing: .12em !important;
+        color: #6f302a !important;
+        white-space: nowrap !important;
       }
 
-      #${ROOT_ID} .mood-area {
-        min-width: 128px !important;
-      }
-
-      #${ROOT_ID} .mood-label {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: baseline !important;
-        margin-bottom: 4px !important;
-        font-size: 10px !important;
-        letter-spacing: .08em !important;
-        color: rgba(63,42,34,.70) !important;
-      }
-
-      #${ROOT_ID} .mood-number {
-        font-size: 14px !important;
-        font-weight: 800 !important;
-        color: #8c3028 !important;
-      }
-
-      #${ROOT_ID} .mood-bar {
-        height: 7px !important;
-        border-radius: 0 !important;
+      #${ROOT_ID} .mood-track {
+        height: 8px !important;
+        border-radius: 999px !important;
         overflow: hidden !important;
-        background: rgba(43,42,40,.24) !important;
-        border: 1px solid rgba(74,52,40,.22) !important;
+        background: rgba(43,42,40,.20) !important;
+        box-shadow: inset 0 1px 3px rgba(0,0,0,.24) !important;
       }
 
       #${ROOT_ID} .mood-fill {
         display: block !important;
-        width: 100% !important;
         height: 100% !important;
-        background: linear-gradient(90deg, #8c3028, #a78d57) !important;
+        width: 100% !important;
+        border-radius: inherit !important;
+        background: linear-gradient(90deg, #8e342e, var(--gold)) !important;
       }
 
-      #${ROOT_ID} .info-block {
-        margin-top: 8px !important;
-      }
-
-      #${ROOT_ID} .info-title {
-        margin-bottom: 3px !important;
-        font-size: 11px !important;
+      #${ROOT_ID} .mood-num {
+        font-size: 12px !important;
         font-weight: 800 !important;
-        letter-spacing: .12em !important;
-        color: #7c342d !important;
+        color: #4a3229 !important;
       }
 
-      #${ROOT_ID} .info-text {
+      #${ROOT_ID} .detail-block {
+        margin-top: 9px !important;
+      }
+
+      #${ROOT_ID} .detail-title {
+        font-size: 12px !important;
+        font-weight: 800 !important;
+        letter-spacing: .10em !important;
+        color: #6f302a !important;
+        margin-bottom: 4px !important;
+      }
+
+      #${ROOT_ID} .detail-text {
         font-size: 12px !important;
         line-height: 1.62 !important;
         letter-spacing: .03em !important;
@@ -707,28 +480,27 @@
         white-space: pre-wrap !important;
       }
 
-      #${ROOT_ID} .divider {
+      #${ROOT_ID} .detail-divider {
         height: 1px !important;
         margin: 11px 0 !important;
-        background: linear-gradient(90deg, transparent, rgba(93,55,40,.42), transparent) !important;
+        background: linear-gradient(90deg, transparent, rgba(112,70,52,.36), transparent) !important;
       }
 
       #${ROOT_ID} .todo-note {
         margin-top: 5px !important;
-        padding: 9px 10px !important;
-        background: #ead8a6 !important;
-        border-left: 5px solid #8c3028 !important;
-        box-shadow:
-          0 4px 10px rgba(65,42,31,.18),
-          inset 0 1px 0 rgba(255,255,255,.24) !important;
+        padding: 10px 12px !important;
+        border-radius: 6px !important;
+        background: linear-gradient(180deg, rgba(255,246,207,.95), rgba(235,210,151,.96)) !important;
+        border-left: 5px solid #9b372f !important;
+        box-shadow: 0 4px 10px rgba(80,44,28,.16), inset 0 1px 0 rgba(255,255,255,.32) !important;
       }
 
       #${ROOT_ID} .todo-list {
+        display: grid !important;
+        gap: 5px !important;
         margin: 0 !important;
         padding: 0 !important;
         list-style: none !important;
-        display: grid !important;
-        gap: 4px !important;
       }
 
       #${ROOT_ID} .todo-list li {
@@ -736,138 +508,269 @@
         padding-left: 17px !important;
         font-size: 12px !important;
         line-height: 1.45 !important;
-        color: rgba(43,31,28,.82) !important;
+        color: rgba(43,31,28,.84) !important;
       }
 
       #${ROOT_ID} .todo-list li::before {
-        content: "◇" !important;
+        content: "◆" !important;
         position: absolute !important;
         left: 0 !important;
         top: 0 !important;
-        color: #8c3028 !important;
+        font-size: 9px !important;
+        color: #9b372f !important;
       }
 
-      @keyframes yukariCursor {
+      @keyframes yukariVnCursor {
         0%, 100% { transform: translateY(0); opacity: .55; }
         50% { transform: translateY(3px); opacity: 1; }
       }
 
       @media (max-width: 520px) {
-        #${ROOT_ID} .vn-panel {
-          width: min(342px, calc(100vw - 124px)) !important;
-          left: 94px !important;
+        #${ROOT_ID} {
+          --icon-size: 106px;
+          --box-left: 68px;
+          --status-width: min(270px, calc(100vw - 90px));
+          --dialog-width: min(330px, calc(100vw - 88px));
+          --dialog-height: 88px;
+          --dialog-top: 50px;
+          --detail-top: 148px;
         }
 
-        #${ROOT_ID} .top-row {
-          width: min(280px, 86%) !important;
-        }
-
-        #${ROOT_ID} .voice-box {
-          min-height: 100px !important;
-          padding: 15px 16px !important;
-        }
-
-        #${ROOT_ID} .voice-text {
-          font-size: 14px !important;
-        }
-
-        #${ROOT_ID} .name-row {
-          display: block !important;
-        }
-
-        #${ROOT_ID} .mood-area {
-          margin-top: 8px !important;
-          min-width: 0 !important;
-        }
+        #${ROOT_ID} .vn-status-bar { padding-left: 15px !important; }
+        #${ROOT_ID} .vn-place { font-size: 14px !important; }
+        #${ROOT_ID} .vn-dialog { padding: 18px 18px 16px 65px !important; }
+        #${ROOT_ID} .vn-dialog-text { font-size: 13px !important; }
       }
     `;
 
+    doc.head.appendChild(style);
+  }
+
+  function createUI() {
     const root = doc.createElement('div');
     root.id = ROOT_ID;
 
     let saved = null;
-    try {
-      saved = JSON.parse(win.localStorage.getItem(STORAGE_KEY) || 'null');
-    } catch (e) {}
-
+    try { saved = JSON.parse(win.localStorage.getItem(STORAGE_KEY) || 'null'); } catch (e) {}
     if (saved && typeof saved.left === 'number' && typeof saved.top === 'number') {
       root.style.left = saved.left + 'px';
       root.style.top = saved.top + 'px';
     }
 
     root.innerHTML = `
-      <div class="simple-icon">
-        <img src="${ICON_URL}" alt="">
+      <div class="vn-icon"><img src="${ICON_URL}" alt=""></div>
+
+      <div class="vn-status-bar">
+        <div class="vn-place"></div>
+        <div class="vn-time"></div>
+        <button class="vn-toggle" type="button">▸</button>
       </div>
 
-      <div class="vn-panel">
-        <div class="top-row">
-          <div class="place-time">
-            <span class="place-text">万事屋</span>
-            <em class="bar-dot">·</em>
-            <span class="time-text">12:30</span>
-          </div>
-          <button class="detail-toggle" type="button" aria-label="展开状态">
-            <span>▼</span>
-          </button>
+      <div class="vn-dialog">
+        <span class="vn-dialog-text"></span><span class="vn-cursor">◆</span>
+      </div>
+
+      <div class="vn-detail">
+        <div class="mood-line">
+          <div class="detail-label">心情値</div>
+          <div class="mood-track"><i class="mood-fill"></i></div>
+          <div class="mood-num"></div>
         </div>
 
-        <div class="detail-layer">
-          <div class="detail-card">
-            <div class="name-row">
-              <div class="name-text">虚见相</div>
-              <div class="mood-area">
-                <div class="mood-label">
-                  <span>心情值</span>
-                  <span class="mood-number">100</span>
-                </div>
-                <div class="mood-bar"><i class="mood-fill"></i></div>
-              </div>
-            </div>
-
-            <div class="info-block">
-              <div class="info-title">装束</div>
-              <div class="info-text outfit-text"></div>
-            </div>
-
-            <div class="info-block">
-              <div class="info-title">行为</div>
-              <div class="info-text action-text"></div>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="info-block">
-              <div class="info-title">角色待办</div>
-              <div class="todo-note">
-                <ul class="todo-list"></ul>
-              </div>
-            </div>
-
-            <div class="info-block">
-              <div class="info-title">当前主线</div>
-              <div class="info-text"><b class="main-title"></b>
-<span class="main-summary"></span></div>
-            </div>
-          </div>
+        <div class="detail-block">
+          <div class="detail-title">装束</div>
+          <div class="detail-text outfit-text"></div>
         </div>
 
-        <div class="voice-box">
-          <span class="voice-text">「真是的……又露出这种表情。」</span><span class="voice-cursor">◆</span>
+        <div class="detail-block">
+          <div class="detail-title">所作</div>
+          <div class="detail-text action-text"></div>
+        </div>
+
+        <div class="detail-divider"></div>
+
+        <div class="detail-block">
+          <div class="detail-title">役目</div>
+          <div class="todo-note"><ul class="todo-list"></ul></div>
+        </div>
+
+        <div class="detail-block">
+          <div class="detail-title">縁の記録</div>
+          <div class="detail-text main-text"></div>
         </div>
       </div>
     `;
 
-    doc.head.appendChild(style);
     doc.body.appendChild(root);
+    return root;
+  }
 
-    const icon = root.querySelector('.simple-icon');
-    const toggle = root.querySelector('.detail-toggle');
-    const voiceBox = root.querySelector('.voice-box');
+  function setText(root, selector, text) {
+    const el = root.querySelector(selector);
+    if (el) el.textContent = text ?? '';
+  }
+
+  function render(root, nextData) {
+    if (nextData) {
+      state.data = { ...FALLBACK, ...nextData };
+      state.quoteIndex = 0;
+    }
+
+    const data = state.data;
+    setText(root, '.vn-place', data.place);
+    setText(root, '.vn-time', data.time);
+    setText(root, '.mood-num', String(data.moodValue));
+    setText(root, '.outfit-text', data.outfit);
+    setText(root, '.action-text', data.action);
+    setText(root, '.main-text', `${data.mainTitle}\n${data.mainSummary}`);
+
+    const fill = root.querySelector('.mood-fill');
+    if (fill) fill.style.width = clampNumber(Number(data.moodValue) || 0, 0, 100) + '%';
+
+    const todoList = root.querySelector('.todo-list');
+    if (todoList) {
+      todoList.innerHTML = '';
+      data.todos.forEach(item => {
+        const li = doc.createElement('li');
+        li.textContent = item;
+        todoList.appendChild(li);
+      });
+    }
+
+    typeQuote(root, data.quotes[state.quoteIndex] || '……');
+  }
+
+  function typeQuote(root, text) {
+    clearInterval(state.typeTimer);
+    const el = root.querySelector('.vn-dialog-text');
+    if (!el) return;
+
+    const chars = Array.from(String(text ?? ''));
+    let index = 0;
+    el.textContent = '';
+
+    state.typeTimer = setInterval(() => {
+      if (index >= chars.length) {
+        clearInterval(state.typeTimer);
+        return;
+      }
+      el.textContent += chars[index];
+      index++;
+    }, 32);
+  }
+
+  function cycleQuote(root) {
+    const quotes = state.data.quotes?.length ? state.data.quotes : FALLBACK.quotes;
+    state.quoteIndex = (state.quoteIndex + 1) % quotes.length;
+    typeQuote(root, quotes[state.quoteIndex]);
+  }
+
+  async function readStatusFromHelper() {
+    if (typeof getChatMessages !== 'function') return null;
+    try {
+      let lastId = 0;
+      try {
+        if (typeof getLastMessageId === 'function') lastId = Number(getLastMessageId()) || 0;
+      } catch (e) {}
+
+      const messages = await Promise.resolve(getChatMessages(`0-${lastId}`, {
+        role: 'assistant',
+        hide_state: 'unhidden',
+        include_swipes: false,
+      }));
+
+      if (!Array.isArray(messages)) return null;
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const block = latestStatusBlock(messages[i]?.message);
+        if (block) return parseStatus(block);
+      }
+    } catch (e) {
+      console.warn('YUKARI VN STATUS: getChatMessages failed', e);
+    }
+    return null;
+  }
+
+  function readStatusFromContext() {
+    try {
+      const ctx = win.SillyTavern?.getContext?.();
+      const chat = ctx?.chat;
+      if (!Array.isArray(chat)) return null;
+
+      for (let i = chat.length - 1; i >= 0; i--) {
+        const msg = chat[i];
+        if (msg?.is_user) continue;
+        const text = msg?.mes ?? msg?.message ?? '';
+        const block = latestStatusBlock(text);
+        if (block) return parseStatus(block);
+      }
+    } catch (e) {
+      console.warn('YUKARI VN STATUS: context read failed', e);
+    }
+    return null;
+  }
+
+  function readStatusFromDom() {
+    try {
+      const nodes = Array.from(doc.querySelectorAll('#chat .mes_text')).reverse();
+      for (const node of nodes) {
+        const block = latestStatusBlock(node.textContent || '');
+        if (block) return parseStatus(block);
+      }
+    } catch (e) {
+      console.warn('YUKARI VN STATUS: dom read failed', e);
+    }
+    return null;
+  }
+
+  async function updateStatus(root) {
+    const data = await readStatusFromHelper() || readStatusFromContext() || readStatusFromDom();
+    if (data) render(root, data);
+  }
+
+  function scheduleUpdate(root, delay = 480) {
+    clearTimeout(state.updateTimer);
+    state.updateTimer = setTimeout(() => updateStatus(root), delay);
+  }
+
+  function bindAutoUpdate(root) {
+    const chat = doc.querySelector('#chat');
+    if (chat) {
+      state.observer = new win.MutationObserver(() => scheduleUpdate(root, 650));
+      state.observer.observe(chat, { childList: true, subtree: true, characterData: true });
+    }
+
+    try {
+      if (typeof eventOn === 'function' && typeof tavern_events !== 'undefined') {
+        ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'CHAT_CHANGED', 'GENERATION_ENDED'].forEach(name => {
+          if (tavern_events[name]) {
+            const stop = eventOn(tavern_events[name], () => scheduleUpdate(root, 520));
+            if (stop?.stop) state.listeners.push(() => stop.stop());
+          }
+        });
+      }
+    } catch (e) {}
+  }
+
+  function bindInteraction(root) {
+    const icon = root.querySelector('.vn-icon');
+    const dialog = root.querySelector('.vn-dialog');
+    const toggle = root.querySelector('.vn-toggle');
+
+    let dragging = false;
+    let moved = false;
+    let startX = 0;
+    let startY = 0;
+    let startLeft = 0;
+    let startTop = 0;
 
     function getPoint(event) {
       const touch = event.touches?.[0] || event.changedTouches?.[0];
       return touch ? { x: touch.clientX, y: touch.clientY } : { x: event.clientX, y: event.clientY };
+    }
+
+    function savePosition() {
+      const rect = root.getBoundingClientRect();
+      try { win.localStorage.setItem(STORAGE_KEY, JSON.stringify({ left: rect.left, top: rect.top })); } catch (e) {}
     }
 
     function clampPosition(left, top) {
@@ -878,125 +781,105 @@
       };
     }
 
-    function savePosition() {
-      const rect = root.getBoundingClientRect();
-      try {
-        win.localStorage.setItem(STORAGE_KEY, JSON.stringify({ left: rect.left, top: rect.top }));
-      } catch (e) {}
-    }
-
-    function ensurePanelInView() {
-      const panel = root.querySelector('.vn-panel');
-      if (!panel) return;
-
+    function ensureInView() {
+      const panelWidth = root.querySelector('.vn-dialog')?.offsetWidth || 560;
       const rootRect = root.getBoundingClientRect();
-      const panelWidth = panel.offsetWidth || 560;
-      const needRight = rootRect.left + 96 + panelWidth + 8;
-
+      const needRight = rootRect.left + 72 + panelWidth + 8;
       if (needRight > win.innerWidth) {
-        const nextLeft = Math.max(4, win.innerWidth - panelWidth - 112);
-        root.style.left = nextLeft + 'px';
+        root.style.left = Math.max(2, win.innerWidth - panelWidth - 82) + 'px';
         savePosition();
       }
     }
 
     function togglePanel() {
       const willOpen = !root.classList.contains('panel-open');
-      if (willOpen) ensurePanelInView();
+      if (willOpen) ensureInView();
       root.classList.toggle('panel-open');
+    }
+
+    function toggleDetail(event) {
+      event.preventDefault();
+      event.stopPropagation();
+      root.classList.toggle('detail-open');
     }
 
     function startDrag(event) {
       const p = getPoint(event);
       const rect = root.getBoundingClientRect();
-
-      state.dragging = true;
-      state.moved = false;
-      state.startX = p.x;
-      state.startY = p.y;
-      state.startLeft = rect.left;
-      state.startTop = rect.top;
-
+      dragging = true;
+      moved = false;
+      startX = p.x;
+      startY = p.y;
+      startLeft = rect.left;
+      startTop = rect.top;
       event.preventDefault();
       event.stopPropagation();
     }
 
     function moveDrag(event) {
-      if (!state.dragging) return;
-
+      if (!dragging) return;
       const p = getPoint(event);
-      const dx = p.x - state.startX;
-      const dy = p.y - state.startY;
-
-      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) state.moved = true;
-
-      if (state.moved) {
-        const next = clampPosition(state.startLeft + dx, state.startTop + dy);
+      const dx = p.x - startX;
+      const dy = p.y - startY;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) moved = true;
+      if (moved) {
+        const next = clampPosition(startLeft + dx, startTop + dy);
         root.style.left = next.left + 'px';
         root.style.top = next.top + 'px';
       }
-
       event.preventDefault();
       event.stopPropagation();
     }
 
     function endDrag(event) {
-      if (!state.dragging) return;
-
-      state.dragging = false;
-
-      if (state.moved) savePosition();
+      if (!dragging) return;
+      dragging = false;
+      if (moved) savePosition();
       else togglePanel();
-
       event?.preventDefault?.();
       event?.stopPropagation?.();
     }
 
-    addListener(icon, 'touchstart', startDrag, { passive: false });
-    addListener(doc, 'touchmove', moveDrag, { passive: false, capture: true });
-    addListener(doc, 'touchend', endDrag, { passive: false, capture: true });
-    addListener(doc, 'touchcancel', endDrag, { passive: false, capture: true });
+    icon.addEventListener('touchstart', startDrag, { passive: false });
+    doc.addEventListener('touchmove', moveDrag, { passive: false, capture: true });
+    doc.addEventListener('touchend', endDrag, { passive: false, capture: true });
+    doc.addEventListener('touchcancel', endDrag, { passive: false, capture: true });
 
-    addListener(icon, 'mousedown', startDrag, true);
-    addListener(doc, 'mousemove', moveDrag, true);
-    addListener(doc, 'mouseup', endDrag, true);
+    icon.addEventListener('mousedown', startDrag, true);
+    doc.addEventListener('mousemove', moveDrag, true);
+    doc.addEventListener('mouseup', endDrag, true);
 
-    addListener(toggle, 'click', event => {
+    dialog.addEventListener('click', () => cycleQuote(root));
+    dialog.addEventListener('touchend', (event) => {
       event.preventDefault();
       event.stopPropagation();
-      root.classList.toggle('detail-open');
-    });
+      cycleQuote(root);
+    }, { passive: false });
 
-    addListener(voiceBox, 'click', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      nextQuote();
-    });
-
-    try {
-      const chat = doc.querySelector('#chat');
-      if (chat && win.MutationObserver) {
-        state.observer = new win.MutationObserver(() => scheduleUpdate(650));
-        state.observer.observe(chat, { childList: true, subtree: true, characterData: true });
-      }
-    } catch (e) {}
-
-    try {
-      if (typeof eventOn === 'function' && typeof tavern_events !== 'undefined') {
-        ['MESSAGE_RECEIVED', 'MESSAGE_UPDATED', 'MESSAGE_SWIPED', 'CHAT_CHANGED', 'GENERATION_ENDED'].forEach(name => {
-          if (tavern_events[name]) {
-            eventOn(tavern_events[name], () => scheduleUpdate(520));
-          }
-        });
-      }
-    } catch (e) {}
-
-    renderData(state.data, true);
-    scheduleUpdate(300);
+    toggle.addEventListener('click', toggleDetail);
+    toggle.addEventListener('touchend', toggleDetail, { passive: false });
   }
 
-  addListener(window, 'unload', cleanup);
-  addListener(window, 'pagehide', cleanup);
+  function init() {
+    if (!doc.body || !doc.head) {
+      setTimeout(init, 100);
+      return;
+    }
+
+    cleanup();
+    addStyle();
+    const root = createUI();
+    render(root, FALLBACK);
+    bindInteraction(root);
+    bindAutoUpdate(root);
+    scheduleUpdate(root, 300);
+  }
+
+  window.addEventListener('unload', cleanup);
+  window.addEventListener('pagehide', cleanup);
+
+  win.__YUKARI_VN_STATUS__ = { cleanup, update: () => updateStatus(doc.getElementById(ROOT_ID)) };
+  window.__YUKARI_VN_STATUS__ = win.__YUKARI_VN_STATUS__;
 
   init();
 })();
