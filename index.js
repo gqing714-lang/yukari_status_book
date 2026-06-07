@@ -201,6 +201,7 @@
       #${ROOT_ID} {
         --icon-size: 114px;
         --box-left: 70px;
+        --text-padding-left: 80px;
         --status-top: 4px;
         --status-height: 34px;
         --dialog-top: 41px;
@@ -304,7 +305,7 @@
         grid-template-columns: 1fr auto auto !important;
         align-items: center !important;
         gap: 10px !important;
-        padding: 0 10px 0 16px !important;
+        padding: 0 10px 0 var(--text-padding-left) !important;
         background: linear-gradient(180deg, #a43b33, var(--red)) !important;
         border: var(--border) solid var(--gold) !important;
         border-radius: var(--radius) !important;
@@ -368,7 +369,10 @@
         width: var(--dialog-width) !important;
         height: var(--dialog-height) !important;
         z-index: 20 !important;
-        padding: 13px 18px 12px 84px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        padding: 0 18px 0 var(--text-padding-left) !important;
         background: var(--black) !important;
         border: var(--border) solid var(--gold) !important;
         border-radius: var(--radius) !important;
@@ -381,6 +385,9 @@
       }
 
       #${ROOT_ID} .dialog-text {
+        display: inline !important;
+        max-width: 100% !important;
+        text-align: left !important;
         font-size: 15px !important;
         line-height: 1.55 !important;
         letter-spacing: .05em !important;
@@ -518,12 +525,13 @@
         #${ROOT_ID} {
           --icon-size: 114px;
           --box-left: 70px;
+          --text-padding-left: 64px;
           --dialog-width: min(330px, calc(100vw - 92px));
           --status-width: min(245px, calc(100vw - 156px));
         }
 
         #${ROOT_ID} .dialog-box {
-          padding-left: 64px !important;
+          padding-left: var(--text-padding-left) !important;
         }
 
         #${ROOT_ID} .dialog-text {
