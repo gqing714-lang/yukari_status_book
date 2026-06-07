@@ -213,7 +213,7 @@
         --cream: #ead9b0;
         --radius: 6px;
         --border: 2px;
-        --text-pad: 52px;
+        --text-pad: 22px;
 
         position: fixed !important;
         left: 24px;
@@ -306,6 +306,8 @@
         align-items: center !important;
         gap: 10px !important;
         padding: 0 10px 0 var(--text-pad) !important;
+        justify-items: stretch !important;
+        text-align: left !important;
         background: linear-gradient(180deg, #a43b33, var(--red)) !important;
         border: var(--border) solid var(--gold) !important;
         border-radius: var(--radius) !important;
@@ -373,6 +375,10 @@
         width: var(--dialog-width) !important;
         height: var(--dialog-height) !important;
         z-index: 20 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        text-align: left !important;
         padding: 13px 18px 12px var(--text-pad) !important;
         background: var(--black) !important;
         border: var(--border) solid var(--gold) !important;
@@ -386,6 +392,8 @@
       }
 
       #${ROOT_ID} .dialog-text {
+        display: inline !important;
+        max-width: 100% !important;
         font-size: 15px !important;
         line-height: 1.55 !important;
         letter-spacing: .05em !important;
@@ -526,7 +534,7 @@
           --box-left: 70px;
           --dialog-width: min(330px, calc(100vw - 92px));
           --status-width: min(245px, calc(100vw - 156px));
-          --text-pad: 52px;
+          --text-pad: 22px;
         }
 
         #${ROOT_ID} .dialog-box {
