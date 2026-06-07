@@ -444,7 +444,7 @@
       #${ROOT_ID} .detail-float {
         position: absolute !important;
         left: var(--box-left) !important;
-        top: calc(var(--dialog-top) + var(--dialog-height) + 7px) !important;
+        top: calc(var(--status-top) + var(--status-height) + 4px) !important;
         width: var(--dialog-width) !important;
         max-height: min(58vh, 360px) !important;
         overflow: auto !important;
