@@ -201,7 +201,7 @@
       #${ROOT_ID} {
         --icon-size: 114px;
         --box-left: 70px;
-        --text-padding-left: 80px;
+        --text-padding-left: 55px;
         --status-top: 4px;
         --status-height: 34px;
         --dialog-top: 41px;
