@@ -525,7 +525,7 @@
         #${ROOT_ID} {
           --icon-size: 114px;
           --box-left: 70px;
-          --text-padding-left: 64px;
+          --text-padding-left: 50px;
           --dialog-width: min(330px, calc(100vw - 92px));
           --status-width: min(245px, calc(100vw - 156px));
         }
