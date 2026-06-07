@@ -92,8 +92,8 @@
         --gold: #a78d57;
         --red: #96352f;
         --black: #2b2a28;
-        --text-safe-status: 74px;
-        --text-safe-dialog: 62px;
+        --text-safe-status: 44px;
+        --text-safe-dialog: 44px;
 
         position: fixed !important;
         left: 24px;
