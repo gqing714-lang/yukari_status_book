@@ -201,7 +201,6 @@
       #${ROOT_ID} {
         --icon-size: 114px;
         --box-left: 70px;
-        --text-pad: 78px;
         --status-top: 4px;
         --status-height: 34px;
         --dialog-top: 41px;
@@ -214,6 +213,7 @@
         --cream: #ead9b0;
         --radius: 6px;
         --border: 2px;
+        --text-pad: 52px;
 
         position: fixed !important;
         left: 24px;
@@ -302,11 +302,10 @@
         height: var(--status-height) !important;
         z-index: 30 !important;
         display: grid !important;
-        grid-template-columns: 1fr auto auto !important;
+        grid-template-columns: minmax(0, 1fr) auto 24px !important;
         align-items: center !important;
-        gap: 8px !important;
+        gap: 10px !important;
         padding: 0 10px 0 var(--text-pad) !important;
-        text-align: left !important;
         background: linear-gradient(180deg, #a43b33, var(--red)) !important;
         border: var(--border) solid var(--gold) !important;
         border-radius: var(--radius) !important;
@@ -334,6 +333,8 @@
         letter-spacing: .08em !important;
         color: rgba(234,217,176,.74) !important;
         white-space: nowrap !important;
+        justify-self: end !important;
+        text-align: right !important;
       }
 
       #${ROOT_ID} .arrow-btn {
@@ -350,6 +351,7 @@
         -webkit-user-select: none !important;
         touch-action: manipulation !important;
         font-family: inherit !important;
+        justify-self: end !important;
       }
 
       #${ROOT_ID} .arrow-btn span {
@@ -372,7 +374,6 @@
         height: var(--dialog-height) !important;
         z-index: 20 !important;
         padding: 13px 18px 12px var(--text-pad) !important;
-        text-align: left !important;
         background: var(--black) !important;
         border: var(--border) solid var(--gold) !important;
         border-radius: var(--radius) !important;
@@ -385,12 +386,11 @@
       }
 
       #${ROOT_ID} .dialog-text {
-        display: inline !important;
-        text-align: left !important;
         font-size: 15px !important;
         line-height: 1.55 !important;
         letter-spacing: .05em !important;
         white-space: pre-wrap !important;
+        text-align: left !important;
         text-shadow: 0 1px 2px rgba(0,0,0,.36) !important;
       }
 
@@ -524,9 +524,9 @@
         #${ROOT_ID} {
           --icon-size: 114px;
           --box-left: 70px;
-          --text-pad: 74px;
           --dialog-width: min(330px, calc(100vw - 92px));
-          --status-width: min(260px, calc(100vw - 140px));
+          --status-width: min(245px, calc(100vw - 156px));
+          --text-pad: 52px;
         }
 
         #${ROOT_ID} .dialog-box {
