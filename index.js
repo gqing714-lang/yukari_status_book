@@ -199,8 +199,8 @@
       }
 
       #${ROOT_ID} {
-        --icon-size: 112px;
-        --box-left: 68px;
+        --icon-size: 114px;
+        --box-left: 70px;
         --status-top: 4px;
         --status-height: 34px;
         --dialog-top: 41px;
@@ -235,7 +235,7 @@
         top: 0 !important;
         width: var(--icon-size) !important;
         height: var(--icon-size) !important;
-        z-index: 40 !important;
+        z-index: 60 !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -402,7 +402,7 @@
         width: var(--dialog-width) !important;
         max-height: min(58vh, 360px) !important;
         overflow: auto !important;
-        z-index: 80 !important;
+        z-index: 50 !important;
         pointer-events: none !important;
         background: rgba(237, 222, 194, .98) !important;
         border: var(--border) solid var(--gold) !important;
@@ -516,8 +516,8 @@
 
       @media (max-width: 520px) {
         #${ROOT_ID} {
-          --icon-size: 112px;
-          --box-left: 68px;
+          --icon-size: 114px;
+          --box-left: 70px;
           --dialog-width: min(330px, calc(100vw - 92px));
           --status-width: min(245px, calc(100vw - 156px));
         }
@@ -782,9 +782,10 @@
     function clampPosition(left, top) {
       const rect = root.getBoundingClientRect();
       const maxRightWidth = Math.min(520, Math.max(240, win.innerWidth - 96));
-      const totalWidth = 68 + maxRightWidth;
       return {
-        left: Math.max(0, Math.min(left, win.innerWidth - Math.min(totalWidth, win.innerWidth))),
+        // 只限制“立绘本体”留在屏幕内，不再把展开面板/对话框也算进拖拽边界。
+        // 之前移动范围过小，就是因为把右侧 UI 总宽度也拿来 clamp 了。
+        left: Math.max(0, Math.min(left, win.innerWidth - rect.width)),
         top: Math.max(0, Math.min(top, win.innerHeight - rect.height))
       };
     }
