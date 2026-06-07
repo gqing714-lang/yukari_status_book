@@ -594,33 +594,49 @@
         animation: yukariCursor 1.05s ease-in-out infinite !important;
       }
 
+      /* ===== 遮罩层：详情打开时压住下方一切，点击关闭 ===== */
+      #${ROOT_ID} .yk-backdrop {
+        position: fixed !important;
+        inset: 0 !important;
+        z-index: 2147483646 !important;
+        background: rgba(10,9,7,.5) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        transition: opacity .22s ease !important;
+      }
+
+      #${ROOT_ID}.detail-open .yk-backdrop {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+
+      /* ===== 详情：独立 fixed 浮层，位置由 JS 贴着图标计算 ===== */
       #${ROOT_ID} .detail-layer {
-        position: absolute !important;
-        z-index: 5 !important;
-        left: 4px !important;
-        top: 46px !important;
-        width: calc(100% - 8px) !important;
-        max-height: min(62vh, 420px) !important;
+        position: fixed !important;
+        z-index: 2147483647 !important;
+        left: 0 !important;
+        top: 0 !important;
+        width: min(360px, calc(100vw - 24px)) !important;
+        max-height: min(70vh, 460px) !important;
         overflow: auto !important;
         overscroll-behavior: contain !important;
         -webkit-overflow-scrolling: touch !important;
 
         opacity: 0 !important;
-        transform: translateY(-8px) scaleY(.72) !important;
-        transform-origin: top center !important;
+        transform: translateY(-8px) scale(.94) !important;
+        transform-origin: top left !important;
         pointer-events: none !important;
-        clip-path: inset(0 0 100% 0 round 4px) !important;
         transition:
           opacity .2s ease,
-          transform .24s cubic-bezier(.2,.9,.2,1),
-          clip-path .26s cubic-bezier(.2,.9,.2,1) !important;
+          transform .26s cubic-bezier(.2,.9,.2,1) !important;
       }
 
       #${ROOT_ID}.detail-open .detail-layer {
         opacity: 1 !important;
-        transform: translateY(0) scaleY(1) !important;
+        transform: translateY(0) scale(1) !important;
         pointer-events: auto !important;
-        clip-path: inset(0 0 0 0 round 4px) !important;
       }
 
       #${ROOT_ID} .detail-card {
@@ -771,6 +787,10 @@
           font-size: 14px !important;
         }
 
+        #${ROOT_ID} .detail-layer {
+          width: min(330px, calc(100vw - 20px)) !important;
+        }
+
         #${ROOT_ID} .name-row {
           display: block !important;
         }
@@ -796,6 +816,8 @@
     }
 
     root.innerHTML = `
+      <div class="yk-backdrop"></div>
+
       <div class="simple-icon">
         <img src="${ICON_URL}" alt="">
       </div>
@@ -812,48 +834,48 @@
           </button>
         </div>
 
-        <div class="detail-layer">
-          <div class="detail-card">
-            <div class="name-row">
-              <div class="name-text">虚见相</div>
-              <div class="mood-area">
-                <div class="mood-label">
-                  <span>心情值</span>
-                  <span class="mood-number">100</span>
-                </div>
-                <div class="mood-bar"><i class="mood-fill"></i></div>
-              </div>
-            </div>
-
-            <div class="info-block">
-              <div class="info-title">装束</div>
-              <div class="info-text outfit-text"></div>
-            </div>
-
-            <div class="info-block">
-              <div class="info-title">行为</div>
-              <div class="info-text action-text"></div>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="info-block">
-              <div class="info-title">角色待办</div>
-              <div class="todo-note">
-                <ul class="todo-list"></ul>
-              </div>
-            </div>
-
-            <div class="info-block">
-              <div class="info-title">当前主线</div>
-              <div class="info-text"><b class="main-title"></b>
-<span class="main-summary"></span></div>
-            </div>
-          </div>
-        </div>
-
         <div class="voice-box">
           <span class="voice-text">「真是的……又露出这种表情。」</span><span class="voice-cursor">◆</span>
+        </div>
+      </div>
+
+      <div class="detail-layer">
+        <div class="detail-card">
+          <div class="name-row">
+            <div class="name-text">虚见相</div>
+            <div class="mood-area">
+              <div class="mood-label">
+                <span>心情值</span>
+                <span class="mood-number">100</span>
+              </div>
+              <div class="mood-bar"><i class="mood-fill"></i></div>
+            </div>
+          </div>
+
+          <div class="info-block">
+            <div class="info-title">装束</div>
+            <div class="info-text outfit-text"></div>
+          </div>
+
+          <div class="info-block">
+            <div class="info-title">行为</div>
+            <div class="info-text action-text"></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="info-block">
+            <div class="info-title">角色待办</div>
+            <div class="todo-note">
+              <ul class="todo-list"></ul>
+            </div>
+          </div>
+
+          <div class="info-block">
+            <div class="info-title">当前主线</div>
+            <div class="info-text"><b class="main-title"></b>
+<span class="main-summary"></span></div>
+          </div>
         </div>
       </div>
     `;
@@ -864,6 +886,8 @@
     const icon = root.querySelector('.simple-icon');
     const toggle = root.querySelector('.detail-toggle');
     const voiceBox = root.querySelector('.voice-box');
+    const backdrop = root.querySelector('.yk-backdrop');
+    const detailLayer = root.querySelector('.detail-layer');
 
     function getPoint(event) {
       const touch = event.touches?.[0] || event.changedTouches?.[0];
@@ -904,6 +928,52 @@
       const willOpen = !root.classList.contains('panel-open');
       if (willOpen) ensurePanelInView();
       root.classList.toggle('panel-open');
+      // 收起整块面板时，详情也一并收起
+      if (!root.classList.contains('panel-open')) closeDetail();
+    }
+
+    // ===== 详情浮层：跟着图标走的定位 =====
+    function positionDetail() {
+      if (!detailLayer) return;
+
+      const iconRect = icon.getBoundingClientRect();
+      const w = detailLayer.offsetWidth || 360;
+      const h = detailLayer.offsetHeight || 420;
+      const margin = 10;
+      const edge = 8;
+
+      // 默认贴在图标右侧
+      let left = iconRect.right + margin;
+      let top = iconRect.top;
+
+      // 右侧放不下 → 改放图标左侧
+      if (left + w > win.innerWidth - edge) {
+        left = iconRect.left - w - margin;
+      }
+      // 左侧也放不下 → 居中兜底
+      if (left < edge) {
+        left = Math.max(edge, (win.innerWidth - w) / 2);
+      }
+
+      // 垂直方向防止超出底/顶
+      if (top + h > win.innerHeight - edge) {
+        top = win.innerHeight - h - edge;
+      }
+      if (top < edge) top = edge;
+
+      detailLayer.style.left = left + 'px';
+      detailLayer.style.top = top + 'px';
+    }
+
+    function openDetail() {
+      positionDetail();
+      root.classList.add('detail-open');
+      // 等浮层渲染出真实高度后再精确定位一次
+      requestAnimationFrame(positionDetail);
+    }
+
+    function closeDetail() {
+      root.classList.remove('detail-open');
     }
 
     function startDrag(event) {
@@ -934,6 +1004,8 @@
         const next = clampPosition(state.startLeft + dx, state.startTop + dy);
         root.style.left = next.left + 'px';
         root.style.top = next.top + 'px';
+        // 拖动时若详情开着，让浮层跟着图标实时移动
+        if (root.classList.contains('detail-open')) positionDetail();
       }
 
       event.preventDefault();
@@ -964,7 +1036,22 @@
     addListener(toggle, 'click', event => {
       event.preventDefault();
       event.stopPropagation();
-      root.classList.toggle('detail-open');
+      if (root.classList.contains('detail-open')) closeDetail();
+      else openDetail();
+    });
+
+    // 点遮罩关闭详情
+    if (backdrop) {
+      addListener(backdrop, 'click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        closeDetail();
+      });
+    }
+
+    // 窗口尺寸变化时，若详情开着则重新贴位
+    addListener(win, 'resize', () => {
+      if (root.classList.contains('detail-open')) positionDetail();
     });
 
     addListener(voiceBox, 'click', event => {
