@@ -213,6 +213,8 @@
         --cream: #ead9b0;
         --radius: 6px;
         --border: 2px;
+        --status-text-left: 74px;
+        --dialog-text-left: 62px;
 
         position: fixed !important;
         left: 24px;
@@ -304,7 +306,7 @@
         grid-template-columns: 1fr auto auto !important;
         align-items: center !important;
         gap: 10px !important;
-        padding: 0 10px 0 16px !important;
+        padding: 0 10px 0 var(--status-text-left) !important;
         background: linear-gradient(180deg, #a43b33, var(--red)) !important;
         border: var(--border) solid var(--gold) !important;
         border-radius: var(--radius) !important;
@@ -368,7 +370,7 @@
         width: var(--dialog-width) !important;
         height: var(--dialog-height) !important;
         z-index: 20 !important;
-        padding: 13px 18px 12px 84px !important;
+        padding: 13px 18px 12px var(--dialog-text-left) !important;
         background: var(--black) !important;
         border: var(--border) solid var(--gold) !important;
         border-radius: var(--radius) !important;
@@ -522,8 +524,9 @@
           --status-width: min(245px, calc(100vw - 156px));
         }
 
-        #${ROOT_ID} .dialog-box {
-          padding-left: 64px !important;
+        #${ROOT_ID} {
+          --status-text-left: 74px;
+          --dialog-text-left: 62px;
         }
 
         #${ROOT_ID} .dialog-text {
