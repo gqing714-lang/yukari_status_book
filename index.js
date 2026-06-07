@@ -201,7 +201,7 @@
       #${ROOT_ID} {
         --icon-size: 114px;
         --box-left: 70px;
-        --text-padding-left: 55px;
+        --text-pad: 78px;
         --status-top: 4px;
         --status-height: 34px;
         --dialog-top: 41px;
@@ -304,8 +304,9 @@
         display: grid !important;
         grid-template-columns: 1fr auto auto !important;
         align-items: center !important;
-        gap: 10px !important;
-        padding: 0 10px 0 var(--text-padding-left) !important;
+        gap: 8px !important;
+        padding: 0 10px 0 var(--text-pad) !important;
+        text-align: left !important;
         background: linear-gradient(180deg, #a43b33, var(--red)) !important;
         border: var(--border) solid var(--gold) !important;
         border-radius: var(--radius) !important;
@@ -324,6 +325,7 @@
         font-size: 18px !important;
         font-weight: 700 !important;
         letter-spacing: .14em !important;
+        text-align: left !important;
         text-shadow: 0 1px 2px rgba(0,0,0,.32) !important;
       }
 
@@ -369,10 +371,8 @@
         width: var(--dialog-width) !important;
         height: var(--dialog-height) !important;
         z-index: 20 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
-        padding: 0 18px 0 var(--text-padding-left) !important;
+        padding: 13px 18px 12px var(--text-pad) !important;
+        text-align: left !important;
         background: var(--black) !important;
         border: var(--border) solid var(--gold) !important;
         border-radius: var(--radius) !important;
@@ -386,7 +386,6 @@
 
       #${ROOT_ID} .dialog-text {
         display: inline !important;
-        max-width: 100% !important;
         text-align: left !important;
         font-size: 15px !important;
         line-height: 1.55 !important;
@@ -525,13 +524,13 @@
         #${ROOT_ID} {
           --icon-size: 114px;
           --box-left: 70px;
-          --text-padding-left: 50px;
+          --text-pad: 74px;
           --dialog-width: min(330px, calc(100vw - 92px));
-          --status-width: min(245px, calc(100vw - 156px));
+          --status-width: min(260px, calc(100vw - 140px));
         }
 
         #${ROOT_ID} .dialog-box {
-          padding-left: var(--text-padding-left) !important;
+          padding-left: var(--text-pad) !important;
         }
 
         #${ROOT_ID} .dialog-text {
