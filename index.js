@@ -210,14 +210,20 @@
         --dialog-height: 70px;
         --dialog-width: min(520px, calc(100vw - 96px));
         --status-width: min(350px, calc(100vw - 160px));
+        --ink: #272421;
+        --ink-deep: #1f1d1b;
+        --ink-soft: #322e2a;
+        --red: #843932;
         --cream: #eadfc3;
-        --cream-dim: rgba(234, 223, 195, .58);
-        --red: #8c3030;
-        --paper: #f5efe2;
-        --paper-block: #ede4d0;
-        --paper-block-strong: #e8dcc8;
-        --paper-text: #2a1f18;
+        --cream-dim: rgba(234, 223, 195, .72);
+        --paper: #e6dac0;
+        --paper-soft: rgba(236, 225, 201, .96);
+        --edge: rgba(183, 161, 117, .34);
+        --edge-soft: rgba(183, 161, 117, .18);
         --shadow: rgba(0, 0, 0, .34);
+        --radius: 4px;
+        --inner-radius: 2px;
+        --border: 1px;
         --text-pad: 22px;
 
         position: fixed !important;
@@ -228,7 +234,7 @@
         overflow: visible !important;
         pointer-events: none !important;
         z-index: 2147483647 !important;
-        font-family: "CustomFont", "NanoOldSong-A", "LXGW WenKai", "Noto Serif SC", "Source Han Serif SC", serif !important;
+        font-family: "CustomFont", "NanoOldSong-A", "LXGW WenKai", "Noto Serif SC", serif !important;
       }
 
       #${ROOT_ID} * {
@@ -279,49 +285,60 @@
         opacity: 1 !important;
       }
 
-      #${ROOT_ID} .status-row,
+      #${ROOT_ID} .status-bar,
       #${ROOT_ID} .dialog-box {
         opacity: 0 !important;
         transform: translateX(-14px) scaleX(.22) !important;
         transform-origin: left center !important;
-        clip-path: inset(0 100% 0 0) !important;
+        clip-path: inset(0 100% 0 0 round var(--radius)) !important;
         transition:
           opacity .22s ease,
           transform .30s cubic-bezier(.2,.9,.2,1),
           clip-path .34s cubic-bezier(.2,.9,.2,1) !important;
       }
 
-      #${ROOT_ID}.panel-open .status-row,
+      #${ROOT_ID}.panel-open .status-bar,
       #${ROOT_ID}.panel-open .dialog-box {
         opacity: 1 !important;
         transform: translateX(0) scaleX(1) !important;
-        clip-path: inset(0 0 0 0) !important;
+        clip-path: inset(0 0 0 0 round var(--radius)) !important;
       }
 
-      #${ROOT_ID} .status-row {
+      #${ROOT_ID} .status-bar {
         position: absolute !important;
         left: var(--box-left) !important;
         top: var(--status-top) !important;
-        display: flex !important;
-        align-items: stretch !important;
-        gap: 0 !important;
         width: var(--status-width) !important;
         height: var(--status-height) !important;
-        z-index: 35 !important;
+        z-index: 30 !important;
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto 24px !important;
+        align-items: center !important;
+        gap: 10px !important;
+        padding: 0 10px 0 var(--text-pad) !important;
+        justify-items: stretch !important;
+        text-align: left !important;
+        background:
+          linear-gradient(180deg, rgba(62, 55, 48, .98), rgba(39, 36, 33, .98)) !important;
+        border: var(--border) solid var(--edge) !important;
+        border-radius: var(--radius) !important;
+        box-shadow:
+          0 6px 18px var(--shadow),
+          inset 0 1px 0 rgba(255,255,255,.06),
+          inset 0 -1px 0 rgba(0,0,0,.22) !important;
+        color: var(--cream) !important;
         pointer-events: auto !important;
       }
 
-      #${ROOT_ID} .seg-location {
-        flex: 1 1 auto !important;
-        display: flex !important;
-        align-items: center !important;
-        min-width: 0 !important;
-        overflow: hidden !important;
-        padding: 0 10px 0 22px !important;
-        background: linear-gradient(90deg, #950d01 0%, #440000 100%) !important;
-        border: 1px solid #3b0606 !important;
-        border-right: none !important;
-        position: relative !important;
+      #${ROOT_ID} .status-bar::before {
+        content: "" !important;
+        position: absolute !important;
+        left: 8px !important;
+        top: 7px !important;
+        bottom: 7px !important;
+        width: 2px !important;
+        background: rgba(132,57,50,.72) !important;
+        border-radius: 1px !important;
       }
 
       #${ROOT_ID} .place {
@@ -332,257 +349,47 @@
         font-size: 17px !important;
         font-weight: 700 !important;
         letter-spacing: .13em !important;
-        color: rgba(234,223,195,.95) !important;
+        text-align: left !important;
         text-shadow: 0 1px 2px rgba(0,0,0,.34) !important;
-      }
-
-      #${ROOT_ID} .seg-dot {
-        margin: 0 9px !important;
-        width: 2px !important;
-        height: 2px !important;
-        border-radius: 50% !important;
-        background: rgba(255,255,255,.22) !important;
-        flex-shrink: 0 !important;
       }
 
       #${ROOT_ID} .time {
         font-size: 13px !important;
         letter-spacing: .08em !important;
-        color: rgba(234,223,195,.55) !important;
+        color: var(--cream-dim) !important;
         white-space: nowrap !important;
-        font-variant-numeric: tabular-nums !important;
-        flex-shrink: 0 !important;
+        justify-self: end !important;
+        text-align: right !important;
       }
 
-      #${ROOT_ID} .panel-wrapper {
-        position: relative !important;
-        width: 34px !important;
-        height: 34px !important;
-        flex: 0 0 34px !important;
-        pointer-events: auto !important;
-      }
-
-      #${ROOT_ID} .seg-icon {
+      #${ROOT_ID} .arrow-btn {
         all: initial !important;
-        width: 34px !important;
-        height: 34px !important;
+        width: 24px !important;
+        height: 24px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        background: transparent !important;
-        border: none !important;
+        color: var(--cream-dim) !important;
         cursor: pointer !important;
-        position: relative !important;
+        pointer-events: auto !important;
         user-select: none !important;
         -webkit-user-select: none !important;
         touch-action: manipulation !important;
-        pointer-events: auto !important;
+        font-family: inherit !important;
+        justify-self: end !important;
       }
 
-      #${ROOT_ID} .seg-icon svg {
-        width: 15px !important;
-        height: 15px !important;
-        stroke: rgba(234,223,195,.60) !important;
-        fill: none !important;
-        stroke-width: 1.5 !important;
-        stroke-linecap: round !important;
-        stroke-linejoin: round !important;
-        transition: stroke .14s !important;
-      }
-
-      #${ROOT_ID} .seg-icon svg [fill] {
-        fill: rgba(234,223,195,.55) !important;
-        stroke: none !important;
-      }
-
-      #${ROOT_ID} .seg-icon:hover svg,
-      #${ROOT_ID} .seg-icon.active svg,
-      #${ROOT_ID}.detail-open .btn-detail svg,
-      #${ROOT_ID}.todo-open .btn-todo svg {
-        stroke: rgba(234,223,195,.95) !important;
-      }
-
-      #${ROOT_ID} .seg-icon.active svg [fill],
-      #${ROOT_ID}.todo-open .btn-todo svg [fill] {
-        fill: rgba(234,223,195,.90) !important;
-      }
-
-      #${ROOT_ID} .detail-panel {
-        position: absolute !important;
-        top: calc(100% + 3px) !important;
-        right: 0 !important;
-        width: var(--status-width) !important;
-        background: #f5efe2 !important;
-        border: 1px solid #c8b89a !important;
-        border-top: 2px solid #8c3030 !important;
-        color: #2a1f18 !important;
-        padding: 9px 10px !important;
-        opacity: 0 !important;
-        transform: translateY(-4px) !important;
-        clip-path: inset(0 0 100% 0) !important;
-        transition:
-          opacity .16s ease,
-          transform .20s cubic-bezier(.2,.9,.2,1),
-          clip-path .22s cubic-bezier(.2,.9,.2,1) !important;
-        pointer-events: none !important;
-        z-index: 99 !important;
-        box-shadow: 0 14px 28px rgba(0,0,0,.26) !important;
-      }
-
-      #${ROOT_ID}.panel-open.detail-open .pw-detail .detail-panel,
-      #${ROOT_ID}.panel-open.todo-open .pw-todo .detail-panel {
-        opacity: 1 !important;
-        transform: translateY(0) !important;
-        clip-path: inset(0 0 0 0) !important;
-        pointer-events: auto !important;
-      }
-
-      #${ROOT_ID} .meta-block {
-        padding: 7px 10px !important;
-        background: #ede4d0 !important;
-        border-left: 2px solid #8c3030 !important;
-        margin-bottom: 5px !important;
-        display: flex !important;
-        flex-direction: column !important;
-        gap: 4px !important;
-      }
-
-      #${ROOT_ID} .meta-row1 {
-        display: flex !important;
-        align-items: baseline !important;
-        gap: 9px !important;
-      }
-
-      #${ROOT_ID} .meta-date {
-        font-size: 15px !important;
-        font-weight: 700 !important;
-        letter-spacing: .06em !important;
-        color: #1e1410 !important;
-        line-height: 1 !important;
-      }
-
-      #${ROOT_ID} .meta-time {
-        font-size: 11px !important;
-        letter-spacing: .06em !important;
-        color: rgba(42,31,24,.42) !important;
-        font-variant-numeric: tabular-nums !important;
-        line-height: 1 !important;
-      }
-
-      #${ROOT_ID} .meta-place {
-        font-size: 12px !important;
-        font-weight: 500 !important;
-        letter-spacing: .18em !important;
-        color: rgba(42,31,24,.58) !important;
-        line-height: 1 !important;
-      }
-
-      #${ROOT_ID} .info-block {
-        padding: 6px 9px !important;
-        background: #ede4d0 !important;
-        border-left: 2px solid rgba(140,48,48,.20) !important;
-        margin-bottom: 4px !important;
-      }
-
-      #${ROOT_ID} .info-block:last-child {
-        margin-bottom: 0 !important;
-      }
-
-      #${ROOT_ID} .info-title {
-        font-size: 9px !important;
-        font-weight: 700 !important;
-        letter-spacing: .22em !important;
-        color: #8c3030 !important;
-        margin-bottom: 4px !important;
-      }
-
-      #${ROOT_ID} .info-text {
-        font-size: 12px !important;
-        line-height: 1.72 !important;
-        color: rgba(42,31,24,.75) !important;
-        letter-spacing: .03em !important;
-        white-space: pre-wrap !important;
-      }
-
-      #${ROOT_ID} .mood-row {
-        display: flex !important;
-        align-items: center !important;
-        gap: 9px !important;
-      }
-
-      #${ROOT_ID} .mood-number {
-        font-size: 11px !important;
-        color: rgba(42,31,24,.40) !important;
-        font-variant-numeric: tabular-nums !important;
-        white-space: nowrap !important;
-        min-width: 22px !important;
-      }
-
-      #${ROOT_ID} .mood-bar {
-        flex: 1 1 auto !important;
-        height: 2px !important;
-        background: rgba(42,31,24,.12) !important;
-      }
-
-      #${ROOT_ID} .mood-fill {
+      #${ROOT_ID} .arrow-btn span {
         display: block !important;
-        height: 100% !important;
-        width: 100% !important;
-        background: linear-gradient(90deg, #8c3030, rgba(140,80,60,.45)) !important;
+        font-size: 13px !important;
+        line-height: 1 !important;
+        transform: rotate(-90deg) !important;
+        transition: transform .22s ease, color .22s ease !important;
       }
 
-      #${ROOT_ID} .panel-divider {
-        height: 1px !important;
-        background: rgba(42,31,24,.10) !important;
-        margin: 5px 0 !important;
-      }
-
-      #${ROOT_ID} .todo-list {
-        margin: 0 !important;
-        padding: 0 !important;
-        list-style: none !important;
-        display: grid !important;
-        gap: 5px !important;
-      }
-
-      #${ROOT_ID} .todo-list li {
-        position: relative !important;
-        padding-left: 13px !important;
-        font-size: 12px !important;
-        line-height: 1.55 !important;
-        color: rgba(42,31,24,.72) !important;
-        letter-spacing: .02em !important;
-      }
-
-      #${ROOT_ID} .todo-list li::before {
-        content: "·" !important;
-        position: absolute !important;
-        left: 2px !important;
-        color: #8c3030 !important;
-        font-size: 16px !important;
-        line-height: .9 !important;
-        top: 1px !important;
-      }
-
-      #${ROOT_ID} .main-title {
-        font-weight: 700 !important;
-        font-size: 12px !important;
-        letter-spacing: .08em !important;
-        color: #1e1410 !important;
-        margin-bottom: 5px !important;
-      }
-
-      #${ROOT_ID} .main-summary {
-        font-size: 11px !important;
-        line-height: 1.78 !important;
-        color: rgba(42,31,24,.55) !important;
-        letter-spacing: .02em !important;
-        white-space: pre-wrap !important;
-      }
-
-      #${ROOT_ID} .todo-block {
-        border-left-color: rgba(140,48,48,.35) !important;
-        background: #e8dcc8 !important;
+      #${ROOT_ID}.detail-open .arrow-btn span {
+        transform: rotate(0deg) !important;
+        color: var(--cream) !important;
       }
 
       #${ROOT_ID} .dialog-box {
@@ -593,16 +400,30 @@
         height: var(--dialog-height) !important;
         z-index: 20 !important;
         display: block !important;
-        padding: 9px 18px 9px 22px !important;
+        text-align: left !important;
+        padding: 9px 18px 9px var(--text-pad) !important;
         overflow: hidden !important;
-        background: radial-gradient(ellipse 65% 120% at 20% 30%, #2b2a28 0%, #000000 100%) !important;
-        border: 1px solid #000 !important;
-        color: rgba(234,223,195,.92) !important;
+        background:
+          linear-gradient(180deg, rgba(43, 40, 37, .98), rgba(31, 29, 27, .98)) !important;
+        border: var(--border) solid var(--edge-soft) !important;
+        border-radius: var(--radius) !important;
+        box-shadow:
+          0 10px 24px rgba(0,0,0,.32),
+          inset 0 1px 0 rgba(255,255,255,.045) !important;
+        color: var(--cream) !important;
         pointer-events: auto !important;
         cursor: pointer !important;
-        user-select: none !important;
-        -webkit-user-select: none !important;
         touch-action: manipulation !important;
+      }
+
+      #${ROOT_ID} .dialog-box::after {
+        content: "" !important;
+        position: absolute !important;
+        left: 12px !important;
+        right: 12px !important;
+        bottom: 7px !important;
+        height: 1px !important;
+        background: linear-gradient(90deg, transparent, rgba(183,161,117,.20), transparent) !important;
       }
 
       #${ROOT_ID} .dialog-content {
@@ -619,10 +440,10 @@
         font-size: 15px !important;
         line-height: 1.55 !important;
         letter-spacing: .05em !important;
-        color: rgba(234,223,195,.92) !important;
         white-space: pre-wrap !important;
         overflow-wrap: anywhere !important;
         word-break: break-word !important;
+        text-align: left !important;
         text-shadow: 0 1px 2px rgba(0,0,0,.36) !important;
       }
 
@@ -630,15 +451,347 @@
         content: "◆" !important;
         display: inline-block !important;
         margin-left: 6px !important;
-        font-size: 9px !important;
-        color: rgba(234,223,195,.92) !important;
+        color: rgba(183, 161, 117, .76) !important;
         animation: ykrCursor 1.05s ease-in-out infinite !important;
-        vertical-align: middle !important;
+      }
+
+      #${ROOT_ID} .detail-float {
+        position: absolute !important;
+        left: var(--box-left) !important;
+        top: calc(var(--status-top) + var(--status-height) + 4px) !important;
+        width: var(--dialog-width) !important;
+        max-height: min(58vh, 360px) !important;
+        overflow: auto !important;
+        z-index: 50 !important;
+        pointer-events: none !important;
+        opacity: 0 !important;
+        transform: translateY(-10px) scaleY(.94) !important;
+        transform-origin: top center !important;
+        clip-path: inset(0 0 100% 0 round var(--radius)) !important;
+        transition:
+          opacity .18s ease,
+          transform .26s cubic-bezier(.2,.85,.2,1),
+          clip-path .28s cubic-bezier(.2,.85,.2,1) !important;
+        background:
+          linear-gradient(180deg, rgba(234, 224, 202, .98), rgba(218, 204, 175, .98)) !important;
+        border: var(--border) solid rgba(92, 76, 51, .28) !important;
+        border-radius: var(--radius) !important;
+        box-shadow:
+          0 16px 34px rgba(0,0,0,.36),
+          inset 0 1px 0 rgba(255,255,255,.34) !important;
+        color: #2f2823 !important;
+        padding: 10px 12px 11px !important;
+      }
+
+      #${ROOT_ID}.panel-open.detail-open .detail-float {
+        opacity: 1 !important;
+        transform: translateY(0) scaleY(1) !important;
+        clip-path: inset(0 0 0 0 round var(--radius)) !important;
+        pointer-events: auto !important;
+      }
+
+      #${ROOT_ID} .detail-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 7px !important;
+      }
+
+      #${ROOT_ID} .info-box {
+        min-width: 0 !important;
+        padding: 7px 8px !important;
+        border-radius: var(--inner-radius) !important;
+        background: rgba(255, 250, 236, .33) !important;
+        border: 1px solid rgba(58, 45, 34, .10) !important;
+      }
+
+      #${ROOT_ID} .info-box.wide {
+        grid-column: 1 / -1 !important;
+      }
+
+      #${ROOT_ID} .mood-box {
+        display: grid !important;
+        grid-template-columns: auto minmax(80px, 1fr) !important;
+        align-items: center !important;
+        column-gap: 10px !important;
+        background: rgba(255, 251, 241, .24) !important;
+      }
+
+      #${ROOT_ID} .mood-box .info-title {
+        margin-bottom: 0 !important;
+      }
+
+      #${ROOT_ID} .mood-box .info-text {
+        display: grid !important;
+        grid-template-columns: auto minmax(60px, 1fr) !important;
+        align-items: center !important;
+        gap: 9px !important;
+      }
+
+      #${ROOT_ID} .info-title {
+        margin-bottom: 4px !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        letter-spacing: .14em !important;
+        color: rgba(105, 50, 43, .82) !important;
+      }
+
+      #${ROOT_ID} .info-text {
+        font-size: 12px !important;
+        line-height: 1.55 !important;
+        color: rgba(43,31,28,.82) !important;
+        white-space: pre-wrap !important;
+      }
+
+      #${ROOT_ID} .mood-number {
+        font-size: 12px !important;
+        color: rgba(43,31,28,.72) !important;
+      }
+
+      #${ROOT_ID} .mood-bar {
+        height: 5px !important;
+        border-radius: 1px !important;
+        overflow: hidden !important;
+        background: rgba(56,42,36,.14) !important;
+        margin-top: 0 !important;
+      }
+
+      #${ROOT_ID} .mood-fill {
+        display: block !important;
+        height: 100% !important;
+        width: 100% !important;
+        border-radius: inherit !important;
+        background: linear-gradient(90deg, rgba(132,57,50,.92), rgba(156,132,82,.82)) !important;
+      }
+
+      #${ROOT_ID} .divider {
+        grid-column: 1 / -1 !important;
+        height: 1px !important;
+        background: linear-gradient(90deg, transparent, rgba(96,58,42,.20), transparent) !important;
+        margin: 0 !important;
+      }
+
+      #${ROOT_ID} .todo-note {
+        background:
+          linear-gradient(180deg, rgba(242,225,184,.62), rgba(226,207,162,.50)) !important;
+        border-color: rgba(117, 87, 43, .18) !important;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.22) !important;
+      }
+
+      #${ROOT_ID} .todo-list {
+        margin: 0 !important;
+        padding: 0 !important;
+        list-style: none !important;
+        display: grid !important;
+        gap: 4px !important;
+      }
+
+      #${ROOT_ID} .todo-list li {
+        position: relative !important;
+        padding-left: 15px !important;
+      }
+
+      #${ROOT_ID} .todo-list li::before {
+        content: "◇" !important;
+        position: absolute !important;
+        left: 0 !important;
+        color: rgba(132,57,50,.62) !important;
+      }
+
+      #${ROOT_ID} .main-title {
+        font-weight: 700 !important;
+        color: rgba(58,34,29,.90) !important;
+        margin-bottom: 3px !important;
       }
 
       @keyframes ykrCursor {
         0%, 100% { transform: translateY(0); opacity: .48; }
         50% { transform: translateY(3px); opacity: .92; }
+      }
+
+
+
+      /* panel-light layout: keep original JS event model, only replace shell */
+      #${ROOT_ID} {
+        --status-width: min(350px, calc(100vw - 160px));
+        --dialog-width: min(520px, calc(100vw - 96px));
+        --red: #8c3030;
+        --cream: #eadfc3;
+        --paper: #f5efe2;
+        --paper-soft: #ede4d0;
+      }
+
+      #${ROOT_ID} .status-bar {
+        display: flex !important;
+        align-items: stretch !important;
+        gap: 0 !important;
+        width: var(--status-width) !important;
+        height: 34px !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        overflow: visible !important;
+      }
+
+      #${ROOT_ID} .status-bar::before { display: none !important; }
+
+      #${ROOT_ID} .seg-location {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        padding: 0 10px 0 22px !important;
+        background: linear-gradient(90deg, #950d01 0%, #440000 100%) !important;
+        border: 1px solid #3b0606 !important;
+        border-right: none !important;
+        overflow: hidden !important;
+      }
+
+      #${ROOT_ID} .place {
+        flex: 1 1 auto !important;
+        color: rgba(234,223,195,.95) !important;
+        min-width: 0 !important;
+      }
+
+      #${ROOT_ID} .seg-dot {
+        margin: 0 9px !important;
+        width: 2px !important;
+        height: 2px !important;
+        border-radius: 50% !important;
+        background: rgba(255,255,255,.22) !important;
+        flex-shrink: 0 !important;
+      }
+
+      #${ROOT_ID} .time {
+        flex-shrink: 0 !important;
+        color: rgba(234,223,195,.55) !important;
+      }
+
+      #${ROOT_ID} .seg-btn {
+        all: initial !important;
+        width: 34px !important;
+        height: 34px !important;
+        flex: 0 0 34px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: transparent !important;
+        border: none !important;
+        cursor: pointer !important;
+        position: relative !important;
+        user-select: none !important;
+        -webkit-user-select: none !important;
+        touch-action: manipulation !important;
+        pointer-events: auto !important;
+        font-family: inherit !important;
+      }
+
+      #${ROOT_ID} .seg-btn svg {
+        width: 15px !important;
+        height: 15px !important;
+        stroke: rgba(234,223,195,.60) !important;
+        fill: none !important;
+        stroke-width: 1.5 !important;
+        stroke-linecap: round !important;
+        stroke-linejoin: round !important;
+        pointer-events: none !important;
+        transition: stroke .14s ease !important;
+      }
+
+      #${ROOT_ID} .seg-btn .svg-fill-dot {
+        fill: rgba(234,223,195,.55) !important;
+        stroke: none !important;
+      }
+
+      #${ROOT_ID}.detail-open .btn-detail svg,
+      #${ROOT_ID}.todo-open .btn-todo svg {
+        stroke: rgba(255,220,200,.95) !important;
+      }
+
+      #${ROOT_ID} .detail-float {
+        display: none !important;
+      }
+
+      #${ROOT_ID} .detail-panel {
+        position: absolute !important;
+        top: calc(var(--status-top) + var(--status-height) + 3px) !important;
+        width: var(--status-width) !important;
+        background: #f5efe2 !important;
+        border: 1px solid #c8b89a !important;
+        border-top: 2px solid #8c3030 !important;
+        color: #2a1f18 !important;
+        padding: 9px 10px !important;
+        opacity: 0 !important;
+        transform: translateY(-4px) !important;
+        clip-path: inset(0 0 100% 0) !important;
+        transition: opacity .16s ease, transform .20s cubic-bezier(.2,.9,.2,1), clip-path .22s cubic-bezier(.2,.9,.2,1) !important;
+        pointer-events: none !important;
+        z-index: 50 !important;
+        box-shadow: 0 16px 34px rgba(0,0,0,.28) !important;
+        font-family: inherit !important;
+      }
+
+      #${ROOT_ID} .detail-panel.detail-panel-main,
+      #${ROOT_ID} .detail-panel.detail-panel-todo {
+        left: var(--box-left) !important;
+      }
+
+      #${ROOT_ID}.panel-open.detail-open .detail-panel-main,
+      #${ROOT_ID}.panel-open.todo-open .detail-panel-todo {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        clip-path: inset(0 0 0 0) !important;
+        pointer-events: auto !important;
+      }
+
+      #${ROOT_ID}.panel-open.detail-open .dialog-box,
+      #${ROOT_ID}.panel-open.todo-open .dialog-box {
+        transform: translateY(138px) !important;
+      }
+
+      #${ROOT_ID} .meta-block {
+        padding: 7px 10px !important;
+        background: #ede4d0 !important;
+        border-left: 2px solid #8c3030 !important;
+        margin-bottom: 5px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 4px !important;
+      }
+
+      #${ROOT_ID} .meta-row1 { display: flex !important; align-items: baseline !important; gap: 9px !important; }
+      #${ROOT_ID} .meta-date { font-size: 15px !important; font-weight: 700 !important; letter-spacing: .06em !important; color: #1e1410 !important; line-height: 1 !important; }
+      #${ROOT_ID} .meta-time { font-size: 11px !important; letter-spacing: .06em !important; color: rgba(42,31,24,.42) !important; font-variant-numeric: tabular-nums !important; line-height: 1 !important; }
+      #${ROOT_ID} .meta-place { font-size: 12px !important; font-weight: 500 !important; letter-spacing: .18em !important; color: rgba(42,31,24,.58) !important; line-height: 1 !important; }
+
+      #${ROOT_ID} .info-block {
+        padding: 6px 9px !important;
+        background: #ede4d0 !important;
+        border-left: 2px solid rgba(140,48,48,.20) !important;
+        margin-bottom: 4px !important;
+      }
+      #${ROOT_ID} .info-block:last-child { margin-bottom: 0 !important; }
+      #${ROOT_ID} .info-title { font-size: 9px !important; font-weight: 700 !important; letter-spacing: .22em !important; color: #8c3030 !important; margin-bottom: 4px !important; }
+      #${ROOT_ID} .info-text { font-size: 12px !important; line-height: 1.72 !important; color: rgba(42,31,24,.75) !important; letter-spacing: .03em !important; white-space: pre-wrap !important; }
+
+      #${ROOT_ID} .mood-row { display: flex !important; align-items: center !important; gap: 9px !important; }
+      #${ROOT_ID} .mood-number { font-size: 11px !important; color: rgba(42,31,24,.40) !important; min-width: 22px !important; }
+      #${ROOT_ID} .mood-bar { flex: 1 1 auto !important; height: 2px !important; background: rgba(42,31,24,.12) !important; border-radius: 0 !important; }
+      #${ROOT_ID} .mood-fill { display: block !important; height: 100% !important; background: linear-gradient(90deg, #8c3030, rgba(140,80,60,.45)) !important; border-radius: 0 !important; }
+
+      #${ROOT_ID} .todo-block { border-left-color: rgba(140,48,48,.35) !important; background: #e8dcc8 !important; }
+      #${ROOT_ID} .todo-list { list-style: none !important; display: grid !important; gap: 5px !important; margin: 0 !important; padding: 0 !important; }
+      #${ROOT_ID} .todo-list li { position: relative !important; padding-left: 13px !important; font-size: 12px !important; line-height: 1.55 !important; color: rgba(42,31,24,.72) !important; letter-spacing: .02em !important; }
+      #${ROOT_ID} .todo-list li::before { content: "·" !important; position: absolute !important; left: 2px !important; color: #8c3030 !important; font-size: 16px !important; line-height: .9 !important; top: 1px !important; }
+      #${ROOT_ID} .panel-divider { height: 1px !important; background: rgba(42,31,24,.10) !important; margin: 5px 0 !important; }
+      #${ROOT_ID} .main-title { font-weight: 700 !important; font-size: 12px !important; letter-spacing: .08em !important; color: #1e1410 !important; margin-bottom: 5px !important; }
+      #${ROOT_ID} .main-summary { font-size: 11px !important; line-height: 1.78 !important; color: rgba(42,31,24,.55) !important; letter-spacing: .02em !important; }
+
+      #${ROOT_ID} .dialog-box {
+        background: radial-gradient(ellipse 65% 120% at 20% 30%, #2b2a28 0%, #000000 100%) !important;
+        border: 1px solid #000 !important;
+        box-shadow: 0 10px 24px rgba(0,0,0,.32) !important;
       }
 
       @media (max-width: 520px) {
@@ -648,6 +801,10 @@
           --dialog-width: min(330px, calc(100vw - 92px));
           --status-width: min(245px, calc(100vw - 156px));
           --text-pad: 22px;
+        }
+
+        #${ROOT_ID} .dialog-box {
+          padding-left: var(--text-pad) !important;
         }
 
         #${ROOT_ID} .dialog-text {
@@ -680,73 +837,66 @@
 
     root.innerHTML = `
       <div class="ykr-ui">
-        <div class="status-row">
+        <div class="status-bar">
           <div class="seg-location">
             <span class="place"></span>
-            <div class="seg-dot"></div>
+            <span class="seg-dot"></span>
             <span class="time"></span>
           </div>
-
-          <div class="panel-wrapper pw-detail">
-            <button class="seg-icon btn-detail" type="button" aria-label="切换人物详情">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="12" cy="8" r="4"/>
-                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-              </svg>
-            </button>
-            <div class="detail-panel">
-              <div class="meta-block">
-                <div class="meta-row1">
-                  <span class="meta-date"></span>
-                  <span class="meta-time"></span>
-                </div>
-                <span class="meta-place"></span>
-              </div>
-              <div class="info-block">
-                <div class="info-title">心情</div>
-                <div class="mood-row">
-                  <span class="mood-number"></span>
-                  <div class="mood-bar"><i class="mood-fill"></i></div>
-                </div>
-              </div>
-              <div class="info-block">
-                <div class="info-title">装束</div>
-                <div class="info-text outfit"></div>
-              </div>
-              <div class="info-block">
-                <div class="info-title">所作</div>
-                <div class="info-text action"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="panel-wrapper pw-todo">
-            <button class="seg-icon btn-todo" type="button" aria-label="切换役目主线">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="8" y1="6" x2="21" y2="6"/>
-                <line x1="8" y1="12" x2="21" y2="12"/>
-                <line x1="8" y1="18" x2="21" y2="18"/>
-                <circle cx="3.5" cy="6" r="1" fill="rgba(234,223,195,.55)" stroke="none"/>
-                <circle cx="3.5" cy="12" r="1" fill="rgba(234,223,195,.55)" stroke="none"/>
-                <circle cx="3.5" cy="18" r="1" fill="rgba(234,223,195,.55)" stroke="none"/>
-              </svg>
-            </button>
-            <div class="detail-panel">
-              <div class="info-block todo-block">
-                <div class="info-title">役目</div>
-                <ul class="todo-list"></ul>
-              </div>
-              <div class="panel-divider"></div>
-              <div class="info-block">
-                <div class="main-title"></div>
-                <div class="main-summary"></div>
-              </div>
-            </div>
-          </div>
+          <button class="seg-btn btn-detail" type="button" aria-label="切换人物详情">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
+            </svg>
+          </button>
+          <button class="seg-btn btn-todo" type="button" aria-label="切换役目主线">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <circle class="svg-fill-dot" cx="3.5" cy="6" r="1"></circle>
+              <circle class="svg-fill-dot" cx="3.5" cy="12" r="1"></circle>
+              <circle class="svg-fill-dot" cx="3.5" cy="18" r="1"></circle>
+            </svg>
+          </button>
         </div>
 
         <div class="dialog-box" title="切换下一句">
           <div class="dialog-content"><span class="dialog-text"></span></div>
+        </div>
+
+        <div class="detail-panel detail-panel-main">
+          <div class="meta-block">
+            <div class="meta-row1">
+              <span class="meta-date"></span>
+              <span class="meta-time"></span>
+            </div>
+            <span class="meta-place"></span>
+          </div>
+          <div class="info-block">
+            <div class="info-title">心情</div>
+            <div class="mood-row"><span class="mood-number"></span><div class="mood-bar"><i class="mood-fill"></i></div></div>
+          </div>
+          <div class="info-block">
+            <div class="info-title">装束</div>
+            <div class="info-text outfit"></div>
+          </div>
+          <div class="info-block">
+            <div class="info-title">所作</div>
+            <div class="info-text action"></div>
+          </div>
+        </div>
+
+        <div class="detail-panel detail-panel-todo">
+          <div class="info-block todo-block">
+            <div class="info-title">役目</div>
+            <ul class="todo-list"></ul>
+          </div>
+          <div class="panel-divider"></div>
+          <div class="info-block">
+            <div class="main-title"></div>
+            <div class="main-summary"></div>
+          </div>
         </div>
       </div>
 
@@ -764,20 +914,12 @@
     if (el) el.textContent = value ?? '';
   }
 
-  function splitTimeMeta(value) {
-    const raw = safeText(value) || fallbackData.time;
-    const match = raw.match(/^(.+?)\s+(\d{1,2}[:：]\d{2}(?:\s*[-~—至]\s*\d{1,2}[:：]\d{2})?.*)$/);
-    if (match) return { date: match[1], time: match[2] };
-    return { date: '当前', time: raw };
-  }
-
   function renderStatic(root) {
     const data = state.data;
-    const meta = splitTimeMeta(data.time);
     setText(root, '.place', data.place);
     setText(root, '.time', data.time);
-    setText(root, '.meta-date', meta.date);
-    setText(root, '.meta-time', meta.time);
+    setText(root, '.meta-date', data.time);
+    setText(root, '.meta-time', data.time);
     setText(root, '.meta-place', data.place);
     setText(root, '.mood-number', String(data.moodValue));
     setText(root, '.outfit', data.outfit);
@@ -1081,10 +1223,8 @@
 
     const icon = root.querySelector('.ykr-icon');
     const dialog = root.querySelector('.dialog-box');
-    const detailBtn = root.querySelector('.btn-detail');
-    const todoBtn = root.querySelector('.btn-todo');
-    const detailPanel = root.querySelector('.pw-detail');
-    const todoPanel = root.querySelector('.pw-todo');
+    const btnDetail = root.querySelector('.btn-detail');
+    const btnTodo = root.querySelector('.btn-todo');
 
     let dragging = false;
     let moved = false;
@@ -1176,45 +1316,32 @@
     }
 
     let lastPanelTap = 0;
-    function handleDetailTap(event) {
+    function handlePanelTap(which, event) {
       const now = Date.now();
       if (now - lastPanelTap < 120) return;
       lastPanelTap = now;
       event.preventDefault();
       event.stopPropagation();
-      const willOpen = !root.classList.contains('detail-open');
-      root.classList.remove('todo-open');
-      root.classList.toggle('detail-open', willOpen);
+
+      const cls = which === 'todo' ? 'todo-open' : 'detail-open';
+      const other = which === 'todo' ? 'detail-open' : 'todo-open';
+      const wasOpen = root.classList.contains(cls);
+      root.classList.remove(other);
+      root.classList.toggle(cls, !wasOpen);
     }
 
-    function handleTodoTap(event) {
-      const now = Date.now();
-      if (now - lastPanelTap < 120) return;
-      lastPanelTap = now;
-      event.preventDefault();
-      event.stopPropagation();
-      const willOpen = !root.classList.contains('todo-open');
-      root.classList.remove('detail-open');
-      root.classList.toggle('todo-open', willOpen);
+    if ('PointerEvent' in win) {
+      dialog.addEventListener('pointerup', handleDialogTap, true);
+      btnDetail.addEventListener('pointerup', event => handlePanelTap('detail', event), true);
+      btnTodo.addEventListener('pointerup', event => handlePanelTap('todo', event), true);
+    } else {
+      dialog.addEventListener('click', handleDialogTap, true);
+      dialog.addEventListener('touchend', handleDialogTap, { passive: false, capture: true });
+      btnDetail.addEventListener('click', event => handlePanelTap('detail', event), true);
+      btnDetail.addEventListener('touchend', event => handlePanelTap('detail', event), { passive: false, capture: true });
+      btnTodo.addEventListener('click', event => handlePanelTap('todo', event), true);
+      btnTodo.addEventListener('touchend', event => handlePanelTap('todo', event), { passive: false, capture: true });
     }
-
-    function stopButtonDown(event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
-
-    dialog.addEventListener('pointerup', handleDialogTap, true);
-    dialog.addEventListener('click', handleDialogTap, true);
-    dialog.addEventListener('touchend', handleDialogTap, { passive: false, capture: true });
-
-    detailBtn?.addEventListener('pointerdown', stopButtonDown, true);
-    todoBtn?.addEventListener('pointerdown', stopButtonDown, true);
-    detailBtn?.addEventListener('pointerup', handleDetailTap, true);
-    todoBtn?.addEventListener('pointerup', handleTodoTap, true);
-    detailBtn?.addEventListener('click', handleDetailTap, true);
-    todoBtn?.addEventListener('click', handleTodoTap, true);
-    detailBtn?.addEventListener('touchend', handleDetailTap, { passive: false, capture: true });
-    todoBtn?.addEventListener('touchend', handleTodoTap, { passive: false, capture: true });
 
     win.addEventListener('resize', () => {
       resetQuoteSegments();
