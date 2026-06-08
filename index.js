@@ -19,6 +19,8 @@
   const STYLE_ID = 'yukari-vn-status-style';
   const STORAGE_KEY = 'yukari-vn-status-position';
   const ICON_URL = 'https://files.catbox.moe/kdsisd.gif';
+  const QUOTE_MAX_LINES = 2;
+  const QUOTE_HARD_MAX_CHARS = 54;
 
   const fallbackData = {
     place: '万事屋',
@@ -397,10 +399,11 @@
         height: var(--dialog-height) !important;
         z-index: 20 !important;
         display: flex !important;
-        align-items: center !important;
+        align-items: flex-start !important;
         justify-content: flex-start !important;
         text-align: left !important;
-        padding: 13px 18px 12px var(--text-pad) !important;
+        padding: 9px 18px 9px var(--text-pad) !important;
+        overflow: hidden !important;
         background:
           linear-gradient(180deg, rgba(43, 40, 37, .98), rgba(31, 29, 27, .98)) !important;
         border: var(--border) solid var(--edge-soft) !important;
@@ -425,11 +428,13 @@
 
       #${ROOT_ID} .dialog-text {
         display: inline !important;
-        max-width: 100% !important;
+        max-width: calc(100% - 20px) !important;
         font-size: 15px !important;
         line-height: 1.55 !important;
         letter-spacing: .05em !important;
         white-space: pre-wrap !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
         text-align: left !important;
         text-shadow: 0 1px 2px rgba(0,0,0,.36) !important;
       }
@@ -720,6 +725,151 @@
     return matched.length ? matched : quotes;
   }
 
+  function getDialogTextMetrics(root) {
+    try {
+      const box = root.querySelector('.dialog-box');
+      const text = root.querySelector('.dialog-text');
+      if (!box || !text) return null;
+
+      const boxStyle = win.getComputedStyle(box);
+      const textStyle = win.getComputedStyle(text);
+      const boxWidth = box.clientWidth || 0;
+      const boxHeight = box.clientHeight || 0;
+      const padLeft = parseFloat(boxStyle.paddingLeft) || 0;
+      const padRight = parseFloat(boxStyle.paddingRight) || 0;
+      const padTop = parseFloat(boxStyle.paddingTop) || 0;
+      const padBottom = parseFloat(boxStyle.paddingBottom) || 0;
+      const fontSize = parseFloat(textStyle.fontSize) || 15;
+      const lineHeight = parseFloat(textStyle.lineHeight) || (fontSize * 1.55);
+      const letterSpacing = textStyle.letterSpacing || 'normal';
+      const usableWidth = Math.max(80, boxWidth - padLeft - padRight - 24);
+      const usableHeight = Math.max(lineHeight, boxHeight - padTop - padBottom);
+      const lines = Math.max(1, Math.min(QUOTE_MAX_LINES, Math.floor(usableHeight / lineHeight)));
+
+      return {
+        width: usableWidth,
+        maxHeight: Math.max(lineHeight, (lineHeight * lines) + 1),
+        fontSize,
+        lineHeight,
+        letterSpacing,
+        fontFamily: textStyle.fontFamily,
+        fontWeight: textStyle.fontWeight
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function fallbackSplitQuoteText(text) {
+    const source = String(text || '').replace(/\r/g, '').trim();
+    if (!source) return [];
+
+    const chunks = [];
+    let chars = [...source];
+    const punct = '。！？!?；;…，、, ';
+    const closers = '」』”’）)】》';
+
+    while (chars.length > QUOTE_HARD_MAX_CHARS) {
+      const minCut = Math.max(1, Math.floor(QUOTE_HARD_MAX_CHARS * .56));
+      let cut = QUOTE_HARD_MAX_CHARS;
+
+      for (let i = Math.min(QUOTE_HARD_MAX_CHARS - 1, chars.length - 1); i >= minCut; i--) {
+        if (punct.includes(chars[i])) {
+          cut = i + 1;
+          break;
+        }
+      }
+
+      while (cut < chars.length && closers.includes(chars[cut])) cut += 1;
+      const chunk = chars.slice(0, cut).join('').trim();
+      if (chunk) chunks.push(chunk);
+      chars = chars.slice(cut).join('').trimStart().split('');
+    }
+
+    const tail = chars.join('').trim();
+    if (tail) chunks.push(tail);
+    return chunks;
+  }
+
+  function splitQuoteText(root, text) {
+    const source = String(text || '').replace(/\r/g, '').trim();
+    if (!source) return [];
+
+    const metrics = getDialogTextMetrics(root);
+    if (!metrics) return fallbackSplitQuoteText(source);
+
+    const measurer = doc.createElement('div');
+    measurer.style.cssText = [
+      'position:absolute',
+      'left:-99999px',
+      'top:-99999px',
+      'visibility:hidden',
+      'pointer-events:none',
+      'box-sizing:border-box',
+      `width:${metrics.width}px`,
+      `font-family:${metrics.fontFamily}`,
+      `font-size:${metrics.fontSize}px`,
+      `font-weight:${metrics.fontWeight}`,
+      `line-height:${metrics.lineHeight}px`,
+      `letter-spacing:${metrics.letterSpacing}`,
+      'white-space:pre-wrap',
+      'overflow-wrap:anywhere',
+      'word-break:break-word'
+    ].join(';') + ';';
+    root.appendChild(measurer);
+
+    const chunks = [];
+    const punct = '。！？!?；;…，、, ';
+    const closers = '」』”’）)】》';
+    let rest = [...source];
+
+    try {
+      while (rest.length) {
+        let lastGood = 0;
+        let lastBreak = 0;
+        const hardStop = Math.min(rest.length, QUOTE_HARD_MAX_CHARS);
+
+        for (let i = 1; i <= hardStop; i++) {
+          measurer.textContent = rest.slice(0, i).join('');
+          if (measurer.scrollHeight <= metrics.maxHeight) {
+            lastGood = i;
+            if (punct.includes(rest[i - 1])) lastBreak = i;
+          } else {
+            break;
+          }
+        }
+
+        if (!lastGood) lastGood = Math.max(1, Math.min(12, hardStop));
+
+        let cut = lastGood;
+        const minUsefulBreak = Math.floor(lastGood * .55);
+        if (lastBreak >= minUsefulBreak) cut = lastBreak;
+        while (cut < rest.length && closers.includes(rest[cut])) cut += 1;
+
+        const chunk = rest.slice(0, cut).join('').trim();
+        if (chunk) chunks.push(chunk);
+        rest = rest.slice(cut).join('').trimStart().split('');
+      }
+    } finally {
+      measurer.remove();
+    }
+
+    return chunks.length ? chunks : fallbackSplitQuoteText(source);
+  }
+
+  function quoteSegmentPool(root) {
+    const segments = [];
+
+    quotePool().forEach(item => {
+      const pieces = splitQuoteText(root, item.text);
+      if (pieces.length) {
+        pieces.forEach(text => segments.push({ ...item, text }));
+      }
+    });
+
+    return segments.length ? segments : quotePool();
+  }
+
   function typeQuote(root, text) {
     clearTimeout(state.typeTimer);
     state.typingToken += 1;
@@ -743,14 +893,14 @@
   }
 
   function showCurrentQuote(root) {
-    const pool = quotePool();
+    const pool = quoteSegmentPool(root);
     if (!pool.length) return;
     const item = pool[state.quoteIndex % pool.length];
     typeQuote(root, item.text);
   }
 
   function nextQuote(root) {
-    const pool = quotePool();
+    const pool = quoteSegmentPool(root);
     if (!pool.length) return;
     state.quoteIndex = (state.quoteIndex + 1) % pool.length;
     showCurrentQuote(root);
