@@ -46,6 +46,7 @@
     updateTimer: null,
     observer: null,
     typingToken: 0,
+    quoteSegments: null,
     visible: true
   };
 
@@ -398,9 +399,7 @@
         width: var(--dialog-width) !important;
         height: var(--dialog-height) !important;
         z-index: 20 !important;
-        display: flex !important;
-        align-items: flex-start !important;
-        justify-content: flex-start !important;
+        display: block !important;
         text-align: left !important;
         padding: 9px 18px 9px var(--text-pad) !important;
         overflow: hidden !important;
@@ -414,6 +413,7 @@
         color: var(--cream) !important;
         pointer-events: auto !important;
         cursor: pointer !important;
+        touch-action: manipulation !important;
       }
 
       #${ROOT_ID} .dialog-box::after {
@@ -426,9 +426,17 @@
         background: linear-gradient(90deg, transparent, rgba(183,161,117,.20), transparent) !important;
       }
 
+      #${ROOT_ID} .dialog-content {
+        display: block !important;
+        width: 100% !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+        text-align: left !important;
+      }
+
       #${ROOT_ID} .dialog-text {
         display: inline !important;
-        max-width: calc(100% - 20px) !important;
+        max-width: 100% !important;
         font-size: 15px !important;
         line-height: 1.55 !important;
         letter-spacing: .05em !important;
@@ -439,7 +447,8 @@
         text-shadow: 0 1px 2px rgba(0,0,0,.36) !important;
       }
 
-      #${ROOT_ID} .cursor {
+      #${ROOT_ID} .dialog-text::after {
+        content: "◆" !important;
         display: inline-block !important;
         margin-left: 6px !important;
         color: rgba(183, 161, 117, .76) !important;
@@ -649,7 +658,7 @@
         </div>
 
         <div class="dialog-box" title="切换下一句">
-          <span class="dialog-text"></span><span class="cursor">◆</span>
+          <div class="dialog-content"><span class="dialog-text"></span></div>
         </div>
 
         <div class="detail-float">
@@ -857,7 +866,7 @@
     return chunks.length ? chunks : fallbackSplitQuoteText(source);
   }
 
-  function quoteSegmentPool(root) {
+  function buildQuoteSegmentPool(root) {
     const segments = [];
 
     quotePool().forEach(item => {
@@ -868,6 +877,17 @@
     });
 
     return segments.length ? segments : quotePool();
+  }
+
+  function quoteSegmentPool(root) {
+    if (!state.quoteSegments) {
+      state.quoteSegments = buildQuoteSegmentPool(root);
+    }
+    return state.quoteSegments;
+  }
+
+  function resetQuoteSegments() {
+    state.quoteSegments = null;
   }
 
   function typeQuote(root, text) {
@@ -883,10 +903,10 @@
 
     const step = () => {
       if (token !== state.typingToken) return;
-      el.textContent = chars.slice(0, i).join('');
       i += 1;
-      if (i <= chars.length) {
-        state.typeTimer = setTimeout(step, 28);
+      el.textContent = chars.slice(0, i).join('');
+      if (i < chars.length) {
+        state.typeTimer = setTimeout(step, 24);
       }
     };
     step();
@@ -956,6 +976,7 @@
     if (block) {
       state.data = parseStatus(block);
       state.quoteIndex = 0;
+      resetQuoteSegments();
       renderStatic(root);
       showCurrentQuote(root);
     }
@@ -1069,23 +1090,40 @@
     doc.addEventListener('mousemove', moveDrag, true);
     doc.addEventListener('mouseup', endDrag, true);
 
-    dialog.addEventListener('click', event => {
+    let lastDialogTap = 0;
+    function handleDialogTap(event) {
+      const now = Date.now();
+      if (now - lastDialogTap < 120) return;
+      lastDialogTap = now;
       event.preventDefault();
       event.stopPropagation();
       nextQuote(root);
-    });
+    }
 
-    arrow.addEventListener('click', event => {
+    let lastArrowTap = 0;
+    function handleArrowTap(event) {
+      const now = Date.now();
+      if (now - lastArrowTap < 120) return;
+      lastArrowTap = now;
       event.preventDefault();
       event.stopPropagation();
       root.classList.toggle('detail-open');
-    });
+    }
 
-    arrow.addEventListener('touchend', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      root.classList.toggle('detail-open');
-    }, { passive: false });
+    if ('PointerEvent' in win) {
+      dialog.addEventListener('pointerup', handleDialogTap, true);
+      arrow.addEventListener('pointerup', handleArrowTap, true);
+    } else {
+      dialog.addEventListener('click', handleDialogTap, true);
+      dialog.addEventListener('touchend', handleDialogTap, { passive: false, capture: true });
+      arrow.addEventListener('click', handleArrowTap, true);
+      arrow.addEventListener('touchend', handleArrowTap, { passive: false, capture: true });
+    }
+
+    win.addEventListener('resize', () => {
+      resetQuoteSegments();
+      showCurrentQuote(root);
+    });
 
     bindObserver(root);
     scheduleUpdate(root, 300);
