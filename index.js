@@ -745,11 +745,6 @@
         pointer-events: auto !important;
       }
 
-      #${ROOT_ID}.panel-open.detail-open .dialog-box,
-      #${ROOT_ID}.panel-open.todo-open .dialog-box {
-        transform: translateY(138px) !important;
-      }
-
       #${ROOT_ID} .meta-block {
         padding: 7px 10px !important;
         background: #ede4d0 !important;
