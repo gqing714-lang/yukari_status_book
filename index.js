@@ -19,6 +19,7 @@
   const STYLE_ID = 'yukari-vn-status-style';
   const STORAGE_KEY = 'yukari-vn-status-position';
   const ICON_URL = 'https://files.catbox.moe/kdsisd.gif';
+  const VERSION = 'panel-split-20260608-r2';
 
   const fallbackData = {
     place: '万事屋',
@@ -207,21 +208,20 @@
         --dialog-height: 70px;
         --dialog-width: min(520px, calc(100vw - 96px));
         --status-width: min(350px, calc(100vw - 160px));
-        --ink: #272421;
-        --ink-deep: #1f1d1b;
-        --ink-soft: #322e2a;
-        --red: #843932;
-        --cream: #eadfc3;
-        --cream-dim: rgba(234, 223, 195, .72);
-        --paper: #e6dac0;
-        --paper-soft: rgba(236, 225, 201, .96);
-        --edge: rgba(183, 161, 117, .34);
-        --edge-soft: rgba(183, 161, 117, .18);
-        --shadow: rgba(0, 0, 0, .34);
-        --radius: 4px;
-        --inner-radius: 2px;
+        --cream: rgba(234,223,195,.92);
+        --cream-dim: rgba(234,223,195,.56);
+        --paper: #f5efe2;
+        --paper-deep: #ede4d0;
+        --paper-soft: #e8dcc8;
+        --ink: #2a1f18;
+        --red: #8c3030;
+        --dark-a: #2b2a28;
+        --dark-b: #000000;
+        --radius: 2px;
+        --inner-radius: 1px;
         --border: 1px;
         --text-pad: 22px;
+        --shadow: rgba(0,0,0,.34);
 
         position: fixed !important;
         left: 24px;
@@ -285,7 +285,7 @@
       #${ROOT_ID} .status-bar,
       #${ROOT_ID} .dialog-box {
         opacity: 0 !important;
-        transform: translateX(-14px) scaleX(.22) !important;
+        transform: translateX(-16px) scaleX(.18) !important;
         transform-origin: left center !important;
         clip-path: inset(0 100% 0 0 round var(--radius)) !important;
         transition:
@@ -307,35 +307,30 @@
         top: var(--status-top) !important;
         width: var(--status-width) !important;
         height: var(--status-height) !important;
-        z-index: 30 !important;
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) auto 24px !important;
-        align-items: center !important;
-        gap: 10px !important;
-        padding: 0 10px 0 var(--text-pad) !important;
-        justify-items: stretch !important;
-        text-align: left !important;
-        background:
-          linear-gradient(180deg, rgba(62, 55, 48, .98), rgba(39, 36, 33, .98)) !important;
-        border: var(--border) solid var(--edge) !important;
-        border-radius: var(--radius) !important;
-        box-shadow:
-          0 6px 18px var(--shadow),
-          inset 0 1px 0 rgba(255,255,255,.06),
-          inset 0 -1px 0 rgba(0,0,0,.22) !important;
+        z-index: 45 !important;
+        display: flex !important;
+        align-items: stretch !important;
+        gap: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
         color: var(--cream) !important;
         pointer-events: auto !important;
+        overflow: visible !important;
       }
 
-      #${ROOT_ID} .status-bar::before {
-        content: "" !important;
-        position: absolute !important;
-        left: 8px !important;
-        top: 7px !important;
-        bottom: 7px !important;
-        width: 2px !important;
-        background: rgba(132,57,50,.72) !important;
-        border-radius: 1px !important;
+      #${ROOT_ID} .seg-location {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+        height: var(--status-height) !important;
+        display: flex !important;
+        align-items: center !important;
+        padding: 0 10px 0 var(--text-pad) !important;
+        background: linear-gradient(90deg, #950d01 0%, #440000 100%) !important;
+        border: var(--border) solid #3b0606 !important;
+        border-right: none !important;
+        overflow: hidden !important;
       }
 
       #${ROOT_ID} .place {
@@ -347,46 +342,253 @@
         font-weight: 700 !important;
         letter-spacing: .13em !important;
         text-align: left !important;
+        color: rgba(234,223,195,.95) !important;
         text-shadow: 0 1px 2px rgba(0,0,0,.34) !important;
+      }
+
+      #${ROOT_ID} .seg-dot {
+        margin: 0 9px !important;
+        width: 2px !important;
+        height: 2px !important;
+        border-radius: 50% !important;
+        background: rgba(255,255,255,.22) !important;
+        flex-shrink: 0 !important;
       }
 
       #${ROOT_ID} .time {
         font-size: 13px !important;
         letter-spacing: .08em !important;
-        color: var(--cream-dim) !important;
+        color: rgba(234,223,195,.55) !important;
         white-space: nowrap !important;
-        justify-self: end !important;
-        text-align: right !important;
+        font-variant-numeric: tabular-nums !important;
+        flex-shrink: 0 !important;
       }
 
-      #${ROOT_ID} .arrow-btn {
+      #${ROOT_ID} .seg-icon {
         all: initial !important;
-        width: 24px !important;
-        height: 24px !important;
+        width: var(--status-height) !important;
+        height: var(--status-height) !important;
+        flex: 0 0 var(--status-height) !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        color: var(--cream-dim) !important;
+        background: transparent !important;
+        border: none !important;
         cursor: pointer !important;
-        pointer-events: auto !important;
+        position: relative !important;
         user-select: none !important;
         -webkit-user-select: none !important;
         touch-action: manipulation !important;
+        pointer-events: auto !important;
         font-family: inherit !important;
-        justify-self: end !important;
       }
 
-      #${ROOT_ID} .arrow-btn span {
-        display: block !important;
-        font-size: 13px !important;
+      #${ROOT_ID} .seg-icon svg {
+        width: 15px !important;
+        height: 15px !important;
+        stroke: rgba(234,223,195,.60) !important;
+        fill: none !important;
+        stroke-width: 1.5 !important;
+        stroke-linecap: round !important;
+        stroke-linejoin: round !important;
+        transition: stroke .14s ease, opacity .14s ease !important;
+      }
+
+      #${ROOT_ID} .seg-icon svg .fill-dot {
+        fill: rgba(234,223,195,.55) !important;
+        stroke: none !important;
+      }
+
+      #${ROOT_ID} .seg-icon:hover svg,
+      #${ROOT_ID}.status-detail-open .status-toggle svg,
+      #${ROOT_ID}.todo-detail-open .todo-toggle svg {
+        stroke: rgba(234,223,195,.95) !important;
+      }
+
+      #${ROOT_ID}.status-detail-open .status-toggle svg .fill-dot,
+      #${ROOT_ID}.todo-detail-open .todo-toggle svg .fill-dot {
+        fill: rgba(234,223,195,.88) !important;
+      }
+
+      #${ROOT_ID} .detail-panel {
+        position: absolute !important;
+        top: calc(100% + 3px) !important;
+        left: 0 !important;
+        width: var(--status-width) !important;
+        max-height: min(58vh, 360px) !important;
+        overflow: auto !important;
+        z-index: 99 !important;
+        background: var(--paper) !important;
+        border: 1px solid #c8b89a !important;
+        border-top: 2px solid var(--red) !important;
+        color: var(--ink) !important;
+        padding: 9px 10px !important;
+        opacity: 0 !important;
+        transform: translateY(-4px) !important;
+        transform-origin: top center !important;
+        clip-path: inset(0 0 100% 0) !important;
+        transition:
+          opacity .16s ease,
+          transform .20s cubic-bezier(.2,.9,.2,1),
+          clip-path .22s cubic-bezier(.2,.9,.2,1) !important;
+        pointer-events: none !important;
+        box-shadow: 0 12px 26px rgba(0,0,0,.28) !important;
+      }
+
+      #${ROOT_ID}.status-detail-open .status-panel,
+      #${ROOT_ID}.todo-detail-open .todo-panel {
+        opacity: 1 !important;
+        transform: translateY(0) !important;
+        clip-path: inset(0 0 0 0) !important;
+        pointer-events: auto !important;
+      }
+
+      #${ROOT_ID} .meta-block {
+        padding: 7px 10px !important;
+        background: var(--paper-deep) !important;
+        border-left: 2px solid var(--red) !important;
+        margin-bottom: 5px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 4px !important;
+      }
+
+      #${ROOT_ID} .meta-row1 {
+        display: flex !important;
+        align-items: baseline !important;
+        gap: 9px !important;
+      }
+
+      #${ROOT_ID} .meta-date {
+        font-size: 15px !important;
+        font-weight: 700 !important;
+        letter-spacing: .06em !important;
+        color: #1e1410 !important;
         line-height: 1 !important;
-        transform: rotate(-90deg) !important;
-        transition: transform .22s ease, color .22s ease !important;
       }
 
-      #${ROOT_ID}.detail-open .arrow-btn span {
-        transform: rotate(0deg) !important;
-        color: var(--cream) !important;
+      #${ROOT_ID} .meta-time {
+        font-size: 11px !important;
+        letter-spacing: .06em !important;
+        color: rgba(42,31,24,.42) !important;
+        font-variant-numeric: tabular-nums !important;
+        line-height: 1 !important;
+      }
+
+      #${ROOT_ID} .meta-place {
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        letter-spacing: .18em !important;
+        color: rgba(42,31,24,.58) !important;
+        line-height: 1 !important;
+      }
+
+      #${ROOT_ID} .info-block {
+        padding: 6px 9px !important;
+        background: var(--paper-deep) !important;
+        border-left: 2px solid rgba(140,48,48,.20) !important;
+        margin-bottom: 4px !important;
+      }
+
+      #${ROOT_ID} .info-block:last-child {
+        margin-bottom: 0 !important;
+      }
+
+      #${ROOT_ID} .info-title {
+        font-size: 9px !important;
+        font-weight: 700 !important;
+        letter-spacing: .22em !important;
+        color: var(--red) !important;
+        margin-bottom: 4px !important;
+      }
+
+      #${ROOT_ID} .info-text {
+        font-size: 12px !important;
+        line-height: 1.72 !important;
+        color: rgba(42,31,24,.75) !important;
+        letter-spacing: .03em !important;
+        white-space: pre-wrap !important;
+      }
+
+      #${ROOT_ID} .mood-row {
+        display: flex !important;
+        align-items: center !important;
+        gap: 9px !important;
+      }
+
+      #${ROOT_ID} .mood-number {
+        font-size: 11px !important;
+        color: rgba(42,31,24,.40) !important;
+        font-variant-numeric: tabular-nums !important;
+        white-space: nowrap !important;
+        min-width: 22px !important;
+      }
+
+      #${ROOT_ID} .mood-bar {
+        flex: 1 1 auto !important;
+        height: 2px !important;
+        background: rgba(42,31,24,.12) !important;
+        overflow: hidden !important;
+      }
+
+      #${ROOT_ID} .mood-fill {
+        display: block !important;
+        height: 100% !important;
+        width: 100% !important;
+        background: linear-gradient(90deg, var(--red), rgba(140,80,60,.45)) !important;
+      }
+
+      #${ROOT_ID} .panel-divider {
+        height: 1px !important;
+        background: rgba(42,31,24,.10) !important;
+        margin: 5px 0 !important;
+      }
+
+      #${ROOT_ID} .todo-block {
+        border-left-color: rgba(140,48,48,.35) !important;
+        background: var(--paper-soft) !important;
+      }
+
+      #${ROOT_ID} .todo-list {
+        margin: 0 !important;
+        padding: 0 !important;
+        list-style: none !important;
+        display: grid !important;
+        gap: 5px !important;
+      }
+
+      #${ROOT_ID} .todo-list li {
+        position: relative !important;
+        padding-left: 13px !important;
+        font-size: 12px !important;
+        line-height: 1.55 !important;
+        color: rgba(42,31,24,.72) !important;
+        letter-spacing: .02em !important;
+      }
+
+      #${ROOT_ID} .todo-list li::before {
+        content: "·" !important;
+        position: absolute !important;
+        left: 2px !important;
+        color: var(--red) !important;
+        font-size: 16px !important;
+        line-height: .9 !important;
+        top: 1px !important;
+      }
+
+      #${ROOT_ID} .main-title {
+        font-weight: 700 !important;
+        font-size: 12px !important;
+        letter-spacing: .08em !important;
+        color: #1e1410 !important;
+        margin-bottom: 5px !important;
+      }
+
+      #${ROOT_ID} .main-summary {
+        font-size: 11px !important;
+        line-height: 1.78 !important;
+        color: rgba(42,31,24,.55) !important;
+        letter-spacing: .02em !important;
       }
 
       #${ROOT_ID} .dialog-box {
@@ -396,31 +598,26 @@
         width: var(--dialog-width) !important;
         height: var(--dialog-height) !important;
         z-index: 20 !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: flex-start !important;
+        display: block !important;
         text-align: left !important;
-        padding: 13px 18px 12px var(--text-pad) !important;
-        background:
-          linear-gradient(180deg, rgba(43, 40, 37, .98), rgba(31, 29, 27, .98)) !important;
-        border: var(--border) solid var(--edge-soft) !important;
+        padding: 9px 18px 9px var(--text-pad) !important;
+        background: radial-gradient(ellipse 65% 120% at 20% 30%, var(--dark-a) 0%, var(--dark-b) 100%) !important;
+        border: 1px solid #000 !important;
         border-radius: var(--radius) !important;
-        box-shadow:
-          0 10px 24px rgba(0,0,0,.32),
-          inset 0 1px 0 rgba(255,255,255,.045) !important;
+        box-shadow: 0 10px 24px rgba(0,0,0,.32) !important;
         color: var(--cream) !important;
         pointer-events: auto !important;
         cursor: pointer !important;
+        user-select: none !important;
+        overflow: hidden !important;
       }
 
-      #${ROOT_ID} .dialog-box::after {
-        content: "" !important;
-        position: absolute !important;
-        left: 12px !important;
-        right: 12px !important;
-        bottom: 7px !important;
-        height: 1px !important;
-        background: linear-gradient(90deg, transparent, rgba(183,161,117,.20), transparent) !important;
+      #${ROOT_ID} .dialog-content {
+        display: block !important;
+        width: 100% !important;
+        max-height: 100% !important;
+        overflow: hidden !important;
+        text-align: left !important;
       }
 
       #${ROOT_ID} .dialog-text {
@@ -429,164 +626,22 @@
         font-size: 15px !important;
         line-height: 1.55 !important;
         letter-spacing: .05em !important;
+        color: var(--cream) !important;
         white-space: pre-wrap !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
         text-align: left !important;
         text-shadow: 0 1px 2px rgba(0,0,0,.36) !important;
       }
 
-      #${ROOT_ID} .cursor {
+      #${ROOT_ID} .dialog-text::after {
+        content: "◆" !important;
         display: inline-block !important;
         margin-left: 6px !important;
-        color: rgba(183, 161, 117, .76) !important;
+        font-size: 9px !important;
+        color: var(--cream) !important;
         animation: ykrCursor 1.05s ease-in-out infinite !important;
-      }
-
-      #${ROOT_ID} .detail-float {
-        position: absolute !important;
-        left: var(--box-left) !important;
-        top: calc(var(--dialog-top) + var(--dialog-height) + 7px) !important;
-        width: var(--dialog-width) !important;
-        max-height: min(58vh, 360px) !important;
-        overflow: auto !important;
-        z-index: 50 !important;
-        pointer-events: none !important;
-        opacity: 0 !important;
-        transform: translateY(-10px) scaleY(.94) !important;
-        transform-origin: top center !important;
-        clip-path: inset(0 0 100% 0 round var(--radius)) !important;
-        transition:
-          opacity .18s ease,
-          transform .26s cubic-bezier(.2,.85,.2,1),
-          clip-path .28s cubic-bezier(.2,.85,.2,1) !important;
-        background:
-          linear-gradient(180deg, rgba(234, 224, 202, .98), rgba(218, 204, 175, .98)) !important;
-        border: var(--border) solid rgba(92, 76, 51, .28) !important;
-        border-radius: var(--radius) !important;
-        box-shadow:
-          0 16px 34px rgba(0,0,0,.36),
-          inset 0 1px 0 rgba(255,255,255,.34) !important;
-        color: #2f2823 !important;
-        padding: 10px 12px 11px !important;
-      }
-
-      #${ROOT_ID}.panel-open.detail-open .detail-float {
-        opacity: 1 !important;
-        transform: translateY(0) scaleY(1) !important;
-        clip-path: inset(0 0 0 0 round var(--radius)) !important;
-        pointer-events: auto !important;
-      }
-
-      #${ROOT_ID} .detail-grid {
-        display: grid !important;
-        grid-template-columns: 1fr !important;
-        gap: 7px !important;
-      }
-
-      #${ROOT_ID} .info-box {
-        min-width: 0 !important;
-        padding: 7px 8px !important;
-        border-radius: var(--inner-radius) !important;
-        background: rgba(255, 250, 236, .33) !important;
-        border: 1px solid rgba(58, 45, 34, .10) !important;
-      }
-
-      #${ROOT_ID} .info-box.wide {
-        grid-column: 1 / -1 !important;
-      }
-
-      #${ROOT_ID} .mood-box {
-        display: grid !important;
-        grid-template-columns: auto minmax(80px, 1fr) !important;
-        align-items: center !important;
-        column-gap: 10px !important;
-        background: rgba(255, 251, 241, .24) !important;
-      }
-
-      #${ROOT_ID} .mood-box .info-title {
-        margin-bottom: 0 !important;
-      }
-
-      #${ROOT_ID} .mood-box .info-text {
-        display: grid !important;
-        grid-template-columns: auto minmax(60px, 1fr) !important;
-        align-items: center !important;
-        gap: 9px !important;
-      }
-
-      #${ROOT_ID} .info-title {
-        margin-bottom: 4px !important;
-        font-size: 11px !important;
-        font-weight: 700 !important;
-        letter-spacing: .14em !important;
-        color: rgba(105, 50, 43, .82) !important;
-      }
-
-      #${ROOT_ID} .info-text {
-        font-size: 12px !important;
-        line-height: 1.55 !important;
-        color: rgba(43,31,28,.82) !important;
-        white-space: pre-wrap !important;
-      }
-
-      #${ROOT_ID} .mood-number {
-        font-size: 12px !important;
-        color: rgba(43,31,28,.72) !important;
-      }
-
-      #${ROOT_ID} .mood-bar {
-        height: 5px !important;
-        border-radius: 1px !important;
-        overflow: hidden !important;
-        background: rgba(56,42,36,.14) !important;
-        margin-top: 0 !important;
-      }
-
-      #${ROOT_ID} .mood-fill {
-        display: block !important;
-        height: 100% !important;
-        width: 100% !important;
-        border-radius: inherit !important;
-        background: linear-gradient(90deg, rgba(132,57,50,.92), rgba(156,132,82,.82)) !important;
-      }
-
-      #${ROOT_ID} .divider {
-        grid-column: 1 / -1 !important;
-        height: 1px !important;
-        background: linear-gradient(90deg, transparent, rgba(96,58,42,.20), transparent) !important;
-        margin: 0 !important;
-      }
-
-      #${ROOT_ID} .todo-note {
-        background:
-          linear-gradient(180deg, rgba(242,225,184,.62), rgba(226,207,162,.50)) !important;
-        border-color: rgba(117, 87, 43, .18) !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.22) !important;
-      }
-
-      #${ROOT_ID} .todo-list {
-        margin: 0 !important;
-        padding: 0 !important;
-        list-style: none !important;
-        display: grid !important;
-        gap: 4px !important;
-      }
-
-      #${ROOT_ID} .todo-list li {
-        position: relative !important;
-        padding-left: 15px !important;
-      }
-
-      #${ROOT_ID} .todo-list li::before {
-        content: "◇" !important;
-        position: absolute !important;
-        left: 0 !important;
-        color: rgba(132,57,50,.62) !important;
-      }
-
-      #${ROOT_ID} .main-title {
-        font-weight: 700 !important;
-        color: rgba(58,34,29,.90) !important;
-        margin-bottom: 3px !important;
+        vertical-align: middle !important;
       }
 
       @keyframes ykrCursor {
@@ -601,10 +656,6 @@
           --dialog-width: min(330px, calc(100vw - 92px));
           --status-width: min(245px, calc(100vw - 156px));
           --text-pad: 22px;
-        }
-
-        #${ROOT_ID} .dialog-box {
-          padding-left: var(--text-pad) !important;
         }
 
         #${ROOT_ID} .dialog-text {
@@ -627,6 +678,7 @@
     const root = doc.createElement('div');
     root.id = ROOT_ID;
     root.classList.add('panel-open');
+    root.dataset.version = VERSION;
 
     let saved = null;
     try { saved = JSON.parse(win.localStorage.getItem(STORAGE_KEY) || 'null'); } catch (e) {}
@@ -638,39 +690,67 @@
     root.innerHTML = `
       <div class="ykr-ui">
         <div class="status-bar">
-          <div class="place"></div>
-          <div class="time"></div>
-          <button class="arrow-btn" type="button" aria-label="切换详情"><span>▼</span></button>
-        </div>
+          <div class="seg-location">
+            <span class="place"></span>
+            <span class="seg-dot"></span>
+            <span class="time"></span>
+          </div>
 
-        <div class="dialog-box" title="切换下一句">
-          <span class="dialog-text"></span><span class="cursor">◆</span>
-        </div>
+          <button class="seg-icon status-toggle" type="button" aria-label="切换状态详情">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
+            </svg>
+          </button>
 
-        <div class="detail-float">
-          <div class="detail-grid">
-            <div class="info-box wide mood-box">
-              <div class="info-title">心情</div>
-              <div class="info-text"><span class="mood-number"></span><div class="mood-bar"><i class="mood-fill"></i></div></div>
+          <button class="seg-icon todo-toggle" type="button" aria-label="切换役目主线">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <circle class="fill-dot" cx="3.5" cy="6" r="1"></circle>
+              <circle class="fill-dot" cx="3.5" cy="12" r="1"></circle>
+              <circle class="fill-dot" cx="3.5" cy="18" r="1"></circle>
+            </svg>
+          </button>
+
+          <div class="detail-panel status-panel">
+            <div class="meta-block">
+              <div class="meta-row1">
+                <span class="meta-date">当前</span>
+                <span class="meta-time"></span>
+              </div>
+              <span class="meta-place"></span>
             </div>
-            <div class="info-box wide">
+            <div class="info-block">
+              <div class="info-title">心情</div>
+              <div class="mood-row"><span class="mood-number"></span><div class="mood-bar"><i class="mood-fill"></i></div></div>
+            </div>
+            <div class="info-block">
               <div class="info-title">装束</div>
               <div class="info-text outfit"></div>
             </div>
-            <div class="info-box wide">
+            <div class="info-block">
               <div class="info-title">所作</div>
               <div class="info-text action"></div>
             </div>
-            <div class="divider"></div>
-            <div class="info-box wide todo-note">
+          </div>
+
+          <div class="detail-panel todo-panel">
+            <div class="info-block todo-block">
               <div class="info-title">役目</div>
-              <div class="info-text"><ul class="todo-list"></ul></div>
+              <ul class="todo-list"></ul>
             </div>
-            <div class="info-box wide">
-              <div class="info-title">当前主线</div>
-              <div class="info-text"><div class="main-title"></div><div class="main-summary"></div></div>
+            <div class="panel-divider"></div>
+            <div class="info-block">
+              <div class="main-title"></div>
+              <div class="main-summary"></div>
             </div>
           </div>
+        </div>
+
+        <div class="dialog-box" title="切换下一句">
+          <div class="dialog-content"><span class="dialog-text"></span></div>
         </div>
       </div>
 
@@ -692,6 +772,8 @@
     const data = state.data;
     setText(root, '.place', data.place);
     setText(root, '.time', data.time);
+    setText(root, '.meta-time', data.time);
+    setText(root, '.meta-place', data.place);
     setText(root, '.char-name', data.name);
     setText(root, '.mood-number', String(data.moodValue));
     setText(root, '.outfit', data.outfit);
@@ -833,12 +915,14 @@
     cleanup();
     injectStyle();
     const root = buildRoot();
+    try { console.info('[yukari-vn-status]', VERSION); } catch (e) {}
     renderStatic(root);
     showCurrentQuote(root);
 
     const icon = root.querySelector('.ykr-icon');
     const dialog = root.querySelector('.dialog-box');
-    const arrow = root.querySelector('.arrow-btn');
+    const statusToggle = root.querySelector('.status-toggle');
+    const todoToggle = root.querySelector('.todo-toggle');
 
     let dragging = false;
     let moved = false;
@@ -905,6 +989,9 @@
         savePosition();
       } else {
         root.classList.toggle('panel-open');
+        if (!root.classList.contains('panel-open')) {
+          root.classList.remove('status-detail-open', 'todo-detail-open');
+        }
       }
       event?.preventDefault?.();
       event?.stopPropagation?.();
@@ -925,17 +1012,40 @@
       nextQuote(root);
     });
 
-    arrow.addEventListener('click', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      root.classList.toggle('detail-open');
-    });
+    function toggleDetailPanel(panelName) {
+      if (panelName === 'status') {
+        const shouldOpen = !root.classList.contains('status-detail-open');
+        root.classList.toggle('status-detail-open', shouldOpen);
+        root.classList.remove('todo-detail-open');
+      } else {
+        const shouldOpen = !root.classList.contains('todo-detail-open');
+        root.classList.toggle('todo-detail-open', shouldOpen);
+        root.classList.remove('status-detail-open');
+      }
+    }
 
-    arrow.addEventListener('touchend', event => {
-      event.preventDefault();
-      event.stopPropagation();
-      root.classList.toggle('detail-open');
-    }, { passive: false });
+    function bindPanelButton(button, panelName) {
+      if (!button) return;
+      button.addEventListener('click', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleDetailPanel(panelName);
+      });
+      button.addEventListener('touchend', event => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleDetailPanel(panelName);
+      }, { passive: false });
+    }
+
+    bindPanelButton(statusToggle, 'status');
+    bindPanelButton(todoToggle, 'todo');
+
+    doc.addEventListener('click', event => {
+      if (!root.contains(event.target)) {
+        root.classList.remove('status-detail-open', 'todo-detail-open');
+      }
+    }, true);
 
     bindObserver(root);
     scheduleUpdate(root, 300);
