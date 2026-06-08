@@ -19,7 +19,8 @@
   const STYLE_ID = 'yukari-vn-status-style';
   const STORAGE_KEY = 'yukari-vn-status-position';
   const ICON_URL = 'https://files.catbox.moe/kdsisd.gif';
-  const VERSION = 'panel-split-20260608-r3-clickfix';
+  const QUOTE_MAX_LINES = 2;
+  const QUOTE_HARD_MAX_CHARS = 54;
 
   const fallbackData = {
     place: '万事屋',
@@ -45,6 +46,7 @@
     updateTimer: null,
     observer: null,
     typingToken: 0,
+    quoteSegments: null,
     visible: true
   };
 
@@ -208,20 +210,15 @@
         --dialog-height: 70px;
         --dialog-width: min(520px, calc(100vw - 96px));
         --status-width: min(350px, calc(100vw - 160px));
-        --cream: rgba(234,223,195,.92);
-        --cream-dim: rgba(234,223,195,.56);
-        --paper: #f5efe2;
-        --paper-deep: #ede4d0;
-        --paper-soft: #e8dcc8;
-        --ink: #2a1f18;
+        --cream: #eadfc3;
+        --cream-dim: rgba(234, 223, 195, .58);
         --red: #8c3030;
-        --dark-a: #2b2a28;
-        --dark-b: #000000;
-        --radius: 2px;
-        --inner-radius: 1px;
-        --border: 1px;
+        --paper: #f5efe2;
+        --paper-block: #ede4d0;
+        --paper-block-strong: #e8dcc8;
+        --paper-text: #2a1f18;
+        --shadow: rgba(0, 0, 0, .34);
         --text-pad: 22px;
-        --shadow: rgba(0,0,0,.34);
 
         position: fixed !important;
         left: 24px;
@@ -231,7 +228,7 @@
         overflow: visible !important;
         pointer-events: none !important;
         z-index: 2147483647 !important;
-        font-family: "CustomFont", "NanoOldSong-A", "LXGW WenKai", "Noto Serif SC", serif !important;
+        font-family: "CustomFont", "NanoOldSong-A", "LXGW WenKai", "Noto Serif SC", "Source Han Serif SC", serif !important;
       }
 
       #${ROOT_ID} * {
@@ -282,55 +279,49 @@
         opacity: 1 !important;
       }
 
-      #${ROOT_ID} .status-bar,
+      #${ROOT_ID} .status-row,
       #${ROOT_ID} .dialog-box {
         opacity: 0 !important;
-        transform: translateX(-16px) scaleX(.18) !important;
+        transform: translateX(-14px) scaleX(.22) !important;
         transform-origin: left center !important;
-        clip-path: inset(0 100% 0 0 round var(--radius)) !important;
+        clip-path: inset(0 100% 0 0) !important;
         transition:
           opacity .22s ease,
           transform .30s cubic-bezier(.2,.9,.2,1),
           clip-path .34s cubic-bezier(.2,.9,.2,1) !important;
       }
 
-      #${ROOT_ID}.panel-open .status-bar,
+      #${ROOT_ID}.panel-open .status-row,
       #${ROOT_ID}.panel-open .dialog-box {
         opacity: 1 !important;
         transform: translateX(0) scaleX(1) !important;
-        clip-path: inset(0 0 0 0 round var(--radius)) !important;
+        clip-path: inset(0 0 0 0) !important;
       }
 
-      #${ROOT_ID} .status-bar {
+      #${ROOT_ID} .status-row {
         position: absolute !important;
         left: var(--box-left) !important;
         top: var(--status-top) !important;
-        width: var(--status-width) !important;
-        height: var(--status-height) !important;
-        z-index: 45 !important;
         display: flex !important;
         align-items: stretch !important;
         gap: 0 !important;
-        padding: 0 !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        color: var(--cream) !important;
+        width: var(--status-width) !important;
+        height: var(--status-height) !important;
+        z-index: 35 !important;
         pointer-events: auto !important;
-        overflow: visible !important;
       }
 
       #${ROOT_ID} .seg-location {
         flex: 1 1 auto !important;
-        min-width: 0 !important;
-        height: var(--status-height) !important;
         display: flex !important;
         align-items: center !important;
-        padding: 0 10px 0 var(--text-pad) !important;
-        background: linear-gradient(90deg, #950d01 0%, #440000 100%) !important;
-        border: var(--border) solid #3b0606 !important;
-        border-right: none !important;
+        min-width: 0 !important;
         overflow: hidden !important;
+        padding: 0 10px 0 22px !important;
+        background: linear-gradient(90deg, #950d01 0%, #440000 100%) !important;
+        border: 1px solid #3b0606 !important;
+        border-right: none !important;
+        position: relative !important;
       }
 
       #${ROOT_ID} .place {
@@ -341,7 +332,6 @@
         font-size: 17px !important;
         font-weight: 700 !important;
         letter-spacing: .13em !important;
-        text-align: left !important;
         color: rgba(234,223,195,.95) !important;
         text-shadow: 0 1px 2px rgba(0,0,0,.34) !important;
       }
@@ -364,11 +354,18 @@
         flex-shrink: 0 !important;
       }
 
+      #${ROOT_ID} .panel-wrapper {
+        position: relative !important;
+        width: 34px !important;
+        height: 34px !important;
+        flex: 0 0 34px !important;
+        pointer-events: auto !important;
+      }
+
       #${ROOT_ID} .seg-icon {
         all: initial !important;
-        width: var(--status-height) !important;
-        height: var(--status-height) !important;
-        flex: 0 0 var(--status-height) !important;
+        width: 34px !important;
+        height: 34px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -380,7 +377,6 @@
         -webkit-user-select: none !important;
         touch-action: manipulation !important;
         pointer-events: auto !important;
-        font-family: inherit !important;
       }
 
       #${ROOT_ID} .seg-icon svg {
@@ -391,64 +387,46 @@
         stroke-width: 1.5 !important;
         stroke-linecap: round !important;
         stroke-linejoin: round !important;
-        transition: stroke .14s ease, opacity .14s ease !important;
+        transition: stroke .14s !important;
       }
 
-      #${ROOT_ID} .seg-icon svg .fill-dot {
+      #${ROOT_ID} .seg-icon svg [fill] {
         fill: rgba(234,223,195,.55) !important;
         stroke: none !important;
       }
 
-      #${ROOT_ID} .status-toggle,
-      #${ROOT_ID} .todo-toggle {
-        position: relative !important;
-        z-index: 130 !important;
-        -webkit-tap-highlight-color: transparent !important;
-      }
-
-      #${ROOT_ID} .seg-icon svg,
-      #${ROOT_ID} .seg-icon svg * {
-        pointer-events: none !important;
-      }
-
       #${ROOT_ID} .seg-icon:hover svg,
-      #${ROOT_ID}.status-detail-open .status-toggle svg,
-      #${ROOT_ID}.todo-detail-open .todo-toggle svg {
+      #${ROOT_ID} .seg-icon.active svg {
         stroke: rgba(234,223,195,.95) !important;
       }
 
-      #${ROOT_ID}.status-detail-open .status-toggle svg .fill-dot,
-      #${ROOT_ID}.todo-detail-open .todo-toggle svg .fill-dot {
-        fill: rgba(234,223,195,.88) !important;
+      #${ROOT_ID} .seg-icon.active svg [fill] {
+        fill: rgba(234,223,195,.90) !important;
       }
 
       #${ROOT_ID} .detail-panel {
         position: absolute !important;
         top: calc(100% + 3px) !important;
-        left: 0 !important;
+        right: 0 !important;
         width: var(--status-width) !important;
-        max-height: min(58vh, 360px) !important;
-        overflow: auto !important;
-        z-index: 99 !important;
-        background: var(--paper) !important;
+        background: #f5efe2 !important;
         border: 1px solid #c8b89a !important;
-        border-top: 2px solid var(--red) !important;
-        color: var(--ink) !important;
+        border-top: 2px solid #8c3030 !important;
+        color: #2a1f18 !important;
         padding: 9px 10px !important;
         opacity: 0 !important;
         transform: translateY(-4px) !important;
-        transform-origin: top center !important;
         clip-path: inset(0 0 100% 0) !important;
         transition:
           opacity .16s ease,
           transform .20s cubic-bezier(.2,.9,.2,1),
           clip-path .22s cubic-bezier(.2,.9,.2,1) !important;
         pointer-events: none !important;
-        box-shadow: 0 12px 26px rgba(0,0,0,.28) !important;
+        z-index: 99 !important;
+        box-shadow: 0 14px 28px rgba(0,0,0,.26) !important;
       }
 
-      #${ROOT_ID}.status-detail-open .status-panel,
-      #${ROOT_ID}.todo-detail-open .todo-panel {
+      #${ROOT_ID}.panel-open .panel-wrapper.open .detail-panel {
         opacity: 1 !important;
         transform: translateY(0) !important;
         clip-path: inset(0 0 0 0) !important;
@@ -457,8 +435,8 @@
 
       #${ROOT_ID} .meta-block {
         padding: 7px 10px !important;
-        background: var(--paper-deep) !important;
-        border-left: 2px solid var(--red) !important;
+        background: #ede4d0 !important;
+        border-left: 2px solid #8c3030 !important;
         margin-bottom: 5px !important;
         display: flex !important;
         flex-direction: column !important;
@@ -497,7 +475,7 @@
 
       #${ROOT_ID} .info-block {
         padding: 6px 9px !important;
-        background: var(--paper-deep) !important;
+        background: #ede4d0 !important;
         border-left: 2px solid rgba(140,48,48,.20) !important;
         margin-bottom: 4px !important;
       }
@@ -510,7 +488,7 @@
         font-size: 9px !important;
         font-weight: 700 !important;
         letter-spacing: .22em !important;
-        color: var(--red) !important;
+        color: #8c3030 !important;
         margin-bottom: 4px !important;
       }
 
@@ -540,25 +518,19 @@
         flex: 1 1 auto !important;
         height: 2px !important;
         background: rgba(42,31,24,.12) !important;
-        overflow: hidden !important;
       }
 
       #${ROOT_ID} .mood-fill {
         display: block !important;
         height: 100% !important;
         width: 100% !important;
-        background: linear-gradient(90deg, var(--red), rgba(140,80,60,.45)) !important;
+        background: linear-gradient(90deg, #8c3030, rgba(140,80,60,.45)) !important;
       }
 
       #${ROOT_ID} .panel-divider {
         height: 1px !important;
         background: rgba(42,31,24,.10) !important;
         margin: 5px 0 !important;
-      }
-
-      #${ROOT_ID} .todo-block {
-        border-left-color: rgba(140,48,48,.35) !important;
-        background: var(--paper-soft) !important;
       }
 
       #${ROOT_ID} .todo-list {
@@ -582,7 +554,7 @@
         content: "·" !important;
         position: absolute !important;
         left: 2px !important;
-        color: var(--red) !important;
+        color: #8c3030 !important;
         font-size: 16px !important;
         line-height: .9 !important;
         top: 1px !important;
@@ -601,6 +573,12 @@
         line-height: 1.78 !important;
         color: rgba(42,31,24,.55) !important;
         letter-spacing: .02em !important;
+        white-space: pre-wrap !important;
+      }
+
+      #${ROOT_ID} .todo-block {
+        border-left-color: rgba(140,48,48,.35) !important;
+        background: #e8dcc8 !important;
       }
 
       #${ROOT_ID} .dialog-box {
@@ -611,17 +589,16 @@
         height: var(--dialog-height) !important;
         z-index: 20 !important;
         display: block !important;
-        text-align: left !important;
-        padding: 9px 18px 9px var(--text-pad) !important;
-        background: radial-gradient(ellipse 65% 120% at 20% 30%, var(--dark-a) 0%, var(--dark-b) 100%) !important;
+        padding: 9px 18px 9px 22px !important;
+        overflow: hidden !important;
+        background: radial-gradient(ellipse 65% 120% at 20% 30%, #2b2a28 0%, #000000 100%) !important;
         border: 1px solid #000 !important;
-        border-radius: var(--radius) !important;
-        box-shadow: 0 10px 24px rgba(0,0,0,.32) !important;
-        color: var(--cream) !important;
+        color: rgba(234,223,195,.92) !important;
         pointer-events: auto !important;
         cursor: pointer !important;
         user-select: none !important;
-        overflow: hidden !important;
+        -webkit-user-select: none !important;
+        touch-action: manipulation !important;
       }
 
       #${ROOT_ID} .dialog-content {
@@ -638,11 +615,10 @@
         font-size: 15px !important;
         line-height: 1.55 !important;
         letter-spacing: .05em !important;
-        color: var(--cream) !important;
+        color: rgba(234,223,195,.92) !important;
         white-space: pre-wrap !important;
         overflow-wrap: anywhere !important;
         word-break: break-word !important;
-        text-align: left !important;
         text-shadow: 0 1px 2px rgba(0,0,0,.36) !important;
       }
 
@@ -651,7 +627,7 @@
         display: inline-block !important;
         margin-left: 6px !important;
         font-size: 9px !important;
-        color: var(--cream) !important;
+        color: rgba(234,223,195,.92) !important;
         animation: ykrCursor 1.05s ease-in-out infinite !important;
         vertical-align: middle !important;
       }
@@ -690,7 +666,6 @@
     const root = doc.createElement('div');
     root.id = ROOT_ID;
     root.classList.add('panel-open');
-    root.dataset.version = VERSION;
 
     let saved = null;
     try { saved = JSON.parse(win.localStorage.getItem(STORAGE_KEY) || 'null'); } catch (e) {}
@@ -701,62 +676,67 @@
 
     root.innerHTML = `
       <div class="ykr-ui">
-        <div class="status-bar">
+        <div class="status-row">
           <div class="seg-location">
             <span class="place"></span>
-            <span class="seg-dot"></span>
+            <div class="seg-dot"></div>
             <span class="time"></span>
           </div>
 
-          <button class="seg-icon status-toggle" type="button" aria-label="切换状态详情">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="8" r="4"></circle>
-              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"></path>
-            </svg>
-          </button>
-
-          <button class="seg-icon todo-toggle" type="button" aria-label="切换役目主线">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <line x1="8" y1="6" x2="21" y2="6"></line>
-              <line x1="8" y1="12" x2="21" y2="12"></line>
-              <line x1="8" y1="18" x2="21" y2="18"></line>
-              <circle class="fill-dot" cx="3.5" cy="6" r="1"></circle>
-              <circle class="fill-dot" cx="3.5" cy="12" r="1"></circle>
-              <circle class="fill-dot" cx="3.5" cy="18" r="1"></circle>
-            </svg>
-          </button>
-
-          <div class="detail-panel status-panel">
-            <div class="meta-block">
-              <div class="meta-row1">
-                <span class="meta-date">当前</span>
-                <span class="meta-time"></span>
+          <div class="panel-wrapper pw-detail">
+            <button class="seg-icon btn-detail" type="button" aria-label="切换人物详情">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8" r="4"/>
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+              </svg>
+            </button>
+            <div class="detail-panel">
+              <div class="meta-block">
+                <div class="meta-row1">
+                  <span class="meta-date"></span>
+                  <span class="meta-time"></span>
+                </div>
+                <span class="meta-place"></span>
               </div>
-              <span class="meta-place"></span>
-            </div>
-            <div class="info-block">
-              <div class="info-title">心情</div>
-              <div class="mood-row"><span class="mood-number"></span><div class="mood-bar"><i class="mood-fill"></i></div></div>
-            </div>
-            <div class="info-block">
-              <div class="info-title">装束</div>
-              <div class="info-text outfit"></div>
-            </div>
-            <div class="info-block">
-              <div class="info-title">所作</div>
-              <div class="info-text action"></div>
+              <div class="info-block">
+                <div class="info-title">心情</div>
+                <div class="mood-row">
+                  <span class="mood-number"></span>
+                  <div class="mood-bar"><i class="mood-fill"></i></div>
+                </div>
+              </div>
+              <div class="info-block">
+                <div class="info-title">装束</div>
+                <div class="info-text outfit"></div>
+              </div>
+              <div class="info-block">
+                <div class="info-title">所作</div>
+                <div class="info-text action"></div>
+              </div>
             </div>
           </div>
 
-          <div class="detail-panel todo-panel">
-            <div class="info-block todo-block">
-              <div class="info-title">役目</div>
-              <ul class="todo-list"></ul>
-            </div>
-            <div class="panel-divider"></div>
-            <div class="info-block">
-              <div class="main-title"></div>
-              <div class="main-summary"></div>
+          <div class="panel-wrapper pw-todo">
+            <button class="seg-icon btn-todo" type="button" aria-label="切换役目主线">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="8" y1="6" x2="21" y2="6"/>
+                <line x1="8" y1="12" x2="21" y2="12"/>
+                <line x1="8" y1="18" x2="21" y2="18"/>
+                <circle cx="3.5" cy="6" r="1" fill="rgba(234,223,195,.55)" stroke="none"/>
+                <circle cx="3.5" cy="12" r="1" fill="rgba(234,223,195,.55)" stroke="none"/>
+                <circle cx="3.5" cy="18" r="1" fill="rgba(234,223,195,.55)" stroke="none"/>
+              </svg>
+            </button>
+            <div class="detail-panel">
+              <div class="info-block todo-block">
+                <div class="info-title">役目</div>
+                <ul class="todo-list"></ul>
+              </div>
+              <div class="panel-divider"></div>
+              <div class="info-block">
+                <div class="main-title"></div>
+                <div class="main-summary"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -780,13 +760,21 @@
     if (el) el.textContent = value ?? '';
   }
 
+  function splitTimeMeta(value) {
+    const raw = safeText(value) || fallbackData.time;
+    const match = raw.match(/^(.+?)\s+(\d{1,2}[:：]\d{2}(?:\s*[-~—至]\s*\d{1,2}[:：]\d{2})?.*)$/);
+    if (match) return { date: match[1], time: match[2] };
+    return { date: '当前', time: raw };
+  }
+
   function renderStatic(root) {
     const data = state.data;
+    const meta = splitTimeMeta(data.time);
     setText(root, '.place', data.place);
     setText(root, '.time', data.time);
-    setText(root, '.meta-time', data.time);
+    setText(root, '.meta-date', meta.date);
+    setText(root, '.meta-time', meta.time);
     setText(root, '.meta-place', data.place);
-    setText(root, '.char-name', data.name);
     setText(root, '.mood-number', String(data.moodValue));
     setText(root, '.outfit', data.outfit);
     setText(root, '.action', data.action);
@@ -814,6 +802,162 @@
     return matched.length ? matched : quotes;
   }
 
+  function getDialogTextMetrics(root) {
+    try {
+      const box = root.querySelector('.dialog-box');
+      const text = root.querySelector('.dialog-text');
+      if (!box || !text) return null;
+
+      const boxStyle = win.getComputedStyle(box);
+      const textStyle = win.getComputedStyle(text);
+      const boxWidth = box.clientWidth || 0;
+      const boxHeight = box.clientHeight || 0;
+      const padLeft = parseFloat(boxStyle.paddingLeft) || 0;
+      const padRight = parseFloat(boxStyle.paddingRight) || 0;
+      const padTop = parseFloat(boxStyle.paddingTop) || 0;
+      const padBottom = parseFloat(boxStyle.paddingBottom) || 0;
+      const fontSize = parseFloat(textStyle.fontSize) || 15;
+      const lineHeight = parseFloat(textStyle.lineHeight) || (fontSize * 1.55);
+      const letterSpacing = textStyle.letterSpacing || 'normal';
+      const usableWidth = Math.max(80, boxWidth - padLeft - padRight - 24);
+      const usableHeight = Math.max(lineHeight, boxHeight - padTop - padBottom);
+      const lines = Math.max(1, Math.min(QUOTE_MAX_LINES, Math.floor(usableHeight / lineHeight)));
+
+      return {
+        width: usableWidth,
+        maxHeight: Math.max(lineHeight, (lineHeight * lines) + 1),
+        fontSize,
+        lineHeight,
+        letterSpacing,
+        fontFamily: textStyle.fontFamily,
+        fontWeight: textStyle.fontWeight
+      };
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function fallbackSplitQuoteText(text) {
+    const source = String(text || '').replace(/\r/g, '').trim();
+    if (!source) return [];
+
+    const chunks = [];
+    let chars = [...source];
+    const punct = '。！？!?；;…，、, ';
+    const closers = '」』”’）)】》';
+
+    while (chars.length > QUOTE_HARD_MAX_CHARS) {
+      const minCut = Math.max(1, Math.floor(QUOTE_HARD_MAX_CHARS * .56));
+      let cut = QUOTE_HARD_MAX_CHARS;
+
+      for (let i = Math.min(QUOTE_HARD_MAX_CHARS - 1, chars.length - 1); i >= minCut; i--) {
+        if (punct.includes(chars[i])) {
+          cut = i + 1;
+          break;
+        }
+      }
+
+      while (cut < chars.length && closers.includes(chars[cut])) cut += 1;
+      const chunk = chars.slice(0, cut).join('').trim();
+      if (chunk) chunks.push(chunk);
+      chars = chars.slice(cut).join('').trimStart().split('');
+    }
+
+    const tail = chars.join('').trim();
+    if (tail) chunks.push(tail);
+    return chunks;
+  }
+
+  function splitQuoteText(root, text) {
+    const source = String(text || '').replace(/\r/g, '').trim();
+    if (!source) return [];
+
+    const metrics = getDialogTextMetrics(root);
+    if (!metrics) return fallbackSplitQuoteText(source);
+
+    const measurer = doc.createElement('div');
+    measurer.style.cssText = [
+      'position:absolute',
+      'left:-99999px',
+      'top:-99999px',
+      'visibility:hidden',
+      'pointer-events:none',
+      'box-sizing:border-box',
+      `width:${metrics.width}px`,
+      `font-family:${metrics.fontFamily}`,
+      `font-size:${metrics.fontSize}px`,
+      `font-weight:${metrics.fontWeight}`,
+      `line-height:${metrics.lineHeight}px`,
+      `letter-spacing:${metrics.letterSpacing}`,
+      'white-space:pre-wrap',
+      'overflow-wrap:anywhere',
+      'word-break:break-word'
+    ].join(';') + ';';
+    root.appendChild(measurer);
+
+    const chunks = [];
+    const punct = '。！？!?；;…，、, ';
+    const closers = '」』”’）)】》';
+    let rest = [...source];
+
+    try {
+      while (rest.length) {
+        let lastGood = 0;
+        let lastBreak = 0;
+        const hardStop = Math.min(rest.length, QUOTE_HARD_MAX_CHARS);
+
+        for (let i = 1; i <= hardStop; i++) {
+          measurer.textContent = rest.slice(0, i).join('');
+          if (measurer.scrollHeight <= metrics.maxHeight) {
+            lastGood = i;
+            if (punct.includes(rest[i - 1])) lastBreak = i;
+          } else {
+            break;
+          }
+        }
+
+        if (!lastGood) lastGood = Math.max(1, Math.min(12, hardStop));
+
+        let cut = lastGood;
+        const minUsefulBreak = Math.floor(lastGood * .55);
+        if (lastBreak >= minUsefulBreak) cut = lastBreak;
+        while (cut < rest.length && closers.includes(rest[cut])) cut += 1;
+
+        const chunk = rest.slice(0, cut).join('').trim();
+        if (chunk) chunks.push(chunk);
+        rest = rest.slice(cut).join('').trimStart().split('');
+      }
+    } finally {
+      measurer.remove();
+    }
+
+    return chunks.length ? chunks : fallbackSplitQuoteText(source);
+  }
+
+  function buildQuoteSegmentPool(root) {
+    const segments = [];
+
+    quotePool().forEach(item => {
+      const pieces = splitQuoteText(root, item.text);
+      if (pieces.length) {
+        pieces.forEach(text => segments.push({ ...item, text }));
+      }
+    });
+
+    return segments.length ? segments : quotePool();
+  }
+
+  function quoteSegmentPool(root) {
+    if (!state.quoteSegments) {
+      state.quoteSegments = buildQuoteSegmentPool(root);
+    }
+    return state.quoteSegments;
+  }
+
+  function resetQuoteSegments() {
+    state.quoteSegments = null;
+  }
+
   function typeQuote(root, text) {
     clearTimeout(state.typeTimer);
     state.typingToken += 1;
@@ -827,24 +971,24 @@
 
     const step = () => {
       if (token !== state.typingToken) return;
-      el.textContent = chars.slice(0, i).join('');
       i += 1;
-      if (i <= chars.length) {
-        state.typeTimer = setTimeout(step, 28);
+      el.textContent = chars.slice(0, i).join('');
+      if (i < chars.length) {
+        state.typeTimer = setTimeout(step, 24);
       }
     };
     step();
   }
 
   function showCurrentQuote(root) {
-    const pool = quotePool();
+    const pool = quoteSegmentPool(root);
     if (!pool.length) return;
     const item = pool[state.quoteIndex % pool.length];
     typeQuote(root, item.text);
   }
 
   function nextQuote(root) {
-    const pool = quotePool();
+    const pool = quoteSegmentPool(root);
     if (!pool.length) return;
     state.quoteIndex = (state.quoteIndex + 1) % pool.length;
     showCurrentQuote(root);
@@ -900,6 +1044,7 @@
     if (block) {
       state.data = parseStatus(block);
       state.quoteIndex = 0;
+      resetQuoteSegments();
       renderStatic(root);
       showCurrentQuote(root);
     }
@@ -927,14 +1072,15 @@
     cleanup();
     injectStyle();
     const root = buildRoot();
-    try { console.info('[yukari-vn-status]', VERSION); } catch (e) {}
     renderStatic(root);
     showCurrentQuote(root);
 
     const icon = root.querySelector('.ykr-icon');
     const dialog = root.querySelector('.dialog-box');
-    const statusToggle = root.querySelector('.status-toggle');
-    const todoToggle = root.querySelector('.todo-toggle');
+    const detailBtn = root.querySelector('.btn-detail');
+    const todoBtn = root.querySelector('.btn-todo');
+    const detailPanel = root.querySelector('.pw-detail');
+    const todoPanel = root.querySelector('.pw-todo');
 
     let dragging = false;
     let moved = false;
@@ -1001,9 +1147,6 @@
         savePosition();
       } else {
         root.classList.toggle('panel-open');
-        if (!root.classList.contains('panel-open')) {
-          root.classList.remove('status-detail-open', 'todo-detail-open');
-        }
       }
       event?.preventDefault?.();
       event?.stopPropagation?.();
@@ -1018,62 +1161,60 @@
     doc.addEventListener('mousemove', moveDrag, true);
     doc.addEventListener('mouseup', endDrag, true);
 
-    dialog.addEventListener('click', event => {
+    let lastDialogTap = 0;
+    function handleDialogTap(event) {
+      const now = Date.now();
+      if (now - lastDialogTap < 120) return;
+      lastDialogTap = now;
       event.preventDefault();
       event.stopPropagation();
       nextQuote(root);
-    });
-
-    function toggleDetailPanel(panelName) {
-      if (panelName === 'status') {
-        const shouldOpen = !root.classList.contains('status-detail-open');
-        root.classList.toggle('status-detail-open', shouldOpen);
-        root.classList.remove('todo-detail-open');
-      } else {
-        const shouldOpen = !root.classList.contains('todo-detail-open');
-        root.classList.toggle('todo-detail-open', shouldOpen);
-        root.classList.remove('status-detail-open');
-      }
     }
 
-    let suppressNextPanelClick = 0;
+    let lastPanelTap = 0;
+    function closePanels(exceptPanel = null) {
+      [detailPanel, todoPanel].forEach(panel => {
+        if (panel && panel !== exceptPanel) panel.classList.remove('open');
+      });
+      if (exceptPanel !== detailPanel) detailBtn?.classList.remove('active');
+      if (exceptPanel !== todoPanel) todoBtn?.classList.remove('active');
+    }
 
-    function handlePanelButton(event, panelName) {
+    function handlePanelTap(panel, button, event) {
+      const now = Date.now();
+      if (now - lastPanelTap < 120) return;
+      lastPanelTap = now;
       event.preventDefault();
       event.stopPropagation();
-      toggleDetailPanel(panelName);
+      const willOpen = !panel.classList.contains('open');
+      closePanels(panel);
+      panel.classList.toggle('open', willOpen);
+      button.classList.toggle('active', willOpen);
     }
 
-    function bindPanelButton(button, panelName) {
-      if (!button) return;
-
-      // 手机端不能同时用 touchend + click 直接切换：一次触摸会先开再被补发 click 关掉。
-      // 用 pointerup 处理即时触发，再用时间戳吃掉随后产生的 click；不支持 PointerEvent 时保留 click 兜底。
-      if (win.PointerEvent) {
-        button.addEventListener('pointerup', event => {
-          suppressNextPanelClick = Date.now() + 450;
-          handlePanelButton(event, panelName);
-        });
-      }
-
-      button.addEventListener('click', event => {
-        if (suppressNextPanelClick && Date.now() < suppressNextPanelClick) {
-          event.preventDefault();
-          event.stopPropagation();
-          return;
-        }
-        handlePanelButton(event, panelName);
-      });
+    function handleDocTap(event) {
+      if (!root.contains(event.target)) closePanels();
     }
 
-    bindPanelButton(statusToggle, 'status');
-    bindPanelButton(todoToggle, 'todo');
+    if ('PointerEvent' in win) {
+      dialog.addEventListener('pointerup', handleDialogTap, true);
+      detailBtn?.addEventListener('pointerup', event => handlePanelTap(detailPanel, detailBtn, event), true);
+      todoBtn?.addEventListener('pointerup', event => handlePanelTap(todoPanel, todoBtn, event), true);
+      doc.addEventListener('pointerup', handleDocTap, true);
+    } else {
+      dialog.addEventListener('click', handleDialogTap, true);
+      dialog.addEventListener('touchend', handleDialogTap, { passive: false, capture: true });
+      detailBtn?.addEventListener('click', event => handlePanelTap(detailPanel, detailBtn, event), true);
+      detailBtn?.addEventListener('touchend', event => handlePanelTap(detailPanel, detailBtn, event), { passive: false, capture: true });
+      todoBtn?.addEventListener('click', event => handlePanelTap(todoPanel, todoBtn, event), true);
+      todoBtn?.addEventListener('touchend', event => handlePanelTap(todoPanel, todoBtn, event), { passive: false, capture: true });
+      doc.addEventListener('click', handleDocTap, true);
+    }
 
-    doc.addEventListener('click', event => {
-      if (!root.contains(event.target)) {
-        root.classList.remove('status-detail-open', 'todo-detail-open');
-      }
-    }, true);
+    win.addEventListener('resize', () => {
+      resetQuoteSegments();
+      showCurrentQuote(root);
+    });
 
     bindObserver(root);
     scheduleUpdate(root, 300);
