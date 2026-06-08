@@ -23,19 +23,19 @@
   const QUOTE_HARD_MAX_CHARS = 54;
 
   const fallbackData = {
-    place: '万事屋',
-    time: '12:30',
+    place: '未知',
+    time: '00:00',
     name: '虚见相',
-    moodValue: 100,
-    moodLabel: '高兴',
-    outfit: '白襦袢、黑羽织，袖口沾着一点旧纸灰。',
-    action: '倚在柜台后看账册，指尖慢慢翻过泛黄的纸页，偶尔抬眼看向门口，像是在等某个本不该来的客人。',
-    mainTitle: '神隐少女事件',
-    mainSummary: '雨夜来访的少女许下“想要消失”的愿望，代价尚未明晰，虚见相似乎并不意外。',
-    todos: ['调查愿望代价', '准备茶点', '观察user状态'],
+    moodValue: 0,
+    moodLabel: '未知',
+    outfit: '未知',
+    action: '无',
+    mainTitle: '无',
+    mainSummary: '无',
+    todos: ['无'],
     quotes: [
-      { mood: '高兴', text: '真是的……又露出这种表情。' },
-      { mood: '高兴', text: '不过我很喜欢哦…' }
+      { mood: '高兴', text: '欢迎光临' },
+  
     ]
   };
 
