@@ -745,6 +745,7 @@
         pointer-events: auto !important;
       }
 
+
       #${ROOT_ID} .meta-block {
         padding: 7px 10px !important;
         background: #ede4d0 !important;
