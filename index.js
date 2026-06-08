@@ -24,8 +24,8 @@
 
   const fallbackData = {
     place: '未知',
+    date: '未知',
     time: '00:00',
-    name: '虚见相',
     moodValue: 0,
     moodLabel: '未知',
     outfit: '未知',
@@ -34,8 +34,7 @@
     mainSummary: '无',
     todos: ['无'],
     quotes: [
-      { mood: '高兴', text: '欢迎光临' },
-  
+      { mood: '高兴', text: '欢迎光临' }
     ]
   };
 
@@ -105,13 +104,13 @@
   }
 
   function splitSections(block) {
-    const keys = ['地点', '时间', '名字', '心情值', '穿着', '当前动作', '当前主线', '角色待办', '台词'];
+    const keys = ['地点', '日期', '时间', '心情值', '穿着', '当前动作', '当前主线', '角色待办', '台词'];
     const result = {};
     keys.forEach(key => result[key] = []);
     let current = null;
 
     cleanBlock(block).split('\n').map(v => v.trim()).filter(Boolean).forEach(line => {
-      const match = line.match(/^(地点|时间|名字|心情值|穿着|当前动作|当前主线|角色待办|台词)\s*[:：]\s*(.*)$/);
+      const match = line.match(/^(地点|日期|时间|心情值|穿着|当前动作|当前主线|角色待办|台词)\s*[:：]\s*(.*)$/);
       if (match) {
         current = match[1];
         const value = safeText(match[2]);
@@ -173,16 +172,20 @@
 
   function parseStatus(block) {
     const sections = splitSections(block);
-    const moodValue = Math.max(0, Math.min(100, Number((sections['心情值'][0] || '100').replace(/[^\d.-]/g, '')) || 0));
+    const rawMoodValue = safeText(sections['心情值'][0]);
+    const hasMoodValue = rawMoodValue !== '';
+    const moodValue = hasMoodValue
+      ? Math.max(0, Math.min(100, Number(rawMoodValue.replace(/[^\d.-]/g, '')) || 0))
+      : fallbackData.moodValue;
     const main = parseMain(sections['当前主线'].join('\n'));
     const quotes = parseQuotes(sections['台词'].join('\n'), moodValue);
 
     return {
       place: sections['地点'][0] || fallbackData.place,
+      date: sections['日期'][0] || fallbackData.date,
       time: sections['时间'][0] || fallbackData.time,
-      name: sections['名字'][0] || fallbackData.name,
       moodValue,
-      moodLabel: scoreToMood(moodValue),
+      moodLabel: hasMoodValue ? scoreToMood(moodValue) : fallbackData.moodLabel,
       outfit: sections['穿着'].join('\n').trim() || fallbackData.outfit,
       action: sections['当前动作'].join('\n').trim() || fallbackData.action,
       mainTitle: main.mainTitle,
@@ -914,7 +917,7 @@
     const data = state.data;
     setText(root, '.place', data.place);
     setText(root, '.time', data.time);
-    setText(root, '.meta-date', data.time);
+    setText(root, '.meta-date', data.date);
     setText(root, '.meta-time', data.time);
     setText(root, '.meta-place', data.place);
     setText(root, '.mood-number', String(data.moodValue));
