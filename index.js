@@ -396,13 +396,14 @@
       }
 
       #${ROOT_ID} .seg-icon:hover svg,
+      #${ROOT_ID} .seg-icon.active svg,
       #${ROOT_ID}.detail-open .btn-detail svg,
-      #${ROOT_ID}.todo-open .btn-todo svg,
-      #${ROOT_ID} .seg-icon.active svg {
+      #${ROOT_ID}.todo-open .btn-todo svg {
         stroke: rgba(234,223,195,.95) !important;
       }
 
-      #${ROOT_ID} .seg-icon.active svg [fill] {
+      #${ROOT_ID} .seg-icon.active svg [fill],
+      #${ROOT_ID}.todo-open .btn-todo svg [fill] {
         fill: rgba(234,223,195,.90) !important;
       }
 
@@ -1175,12 +1176,6 @@
     }
 
     let lastPanelTap = 0;
-    function closePanels() {
-      root.classList.remove('detail-open', 'todo-open');
-      detailBtn?.classList.remove('active');
-      todoBtn?.classList.remove('active');
-    }
-
     function handleDetailTap(event) {
       const now = Date.now();
       if (now - lastPanelTap < 120) return;
@@ -1188,9 +1183,8 @@
       event.preventDefault();
       event.stopPropagation();
       const willOpen = !root.classList.contains('detail-open');
-      closePanels();
+      root.classList.remove('todo-open');
       root.classList.toggle('detail-open', willOpen);
-      detailBtn?.classList.toggle('active', willOpen);
     }
 
     function handleTodoTap(event) {
@@ -1200,29 +1194,27 @@
       event.preventDefault();
       event.stopPropagation();
       const willOpen = !root.classList.contains('todo-open');
-      closePanels();
+      root.classList.remove('detail-open');
       root.classList.toggle('todo-open', willOpen);
-      todoBtn?.classList.toggle('active', willOpen);
     }
 
-    function handleDocTap(event) {
-      if (!root.contains(event.target)) closePanels();
+    function stopButtonDown(event) {
+      event.preventDefault();
+      event.stopPropagation();
     }
 
-    if ('PointerEvent' in win) {
-      dialog.addEventListener('pointerup', handleDialogTap, true);
-      detailBtn?.addEventListener('pointerup', handleDetailTap, true);
-      todoBtn?.addEventListener('pointerup', handleTodoTap, true);
-      doc.addEventListener('pointerup', handleDocTap, true);
-    } else {
-      dialog.addEventListener('click', handleDialogTap, true);
-      dialog.addEventListener('touchend', handleDialogTap, { passive: false, capture: true });
-      detailBtn?.addEventListener('click', handleDetailTap, true);
-      detailBtn?.addEventListener('touchend', handleDetailTap, { passive: false, capture: true });
-      todoBtn?.addEventListener('click', handleTodoTap, true);
-      todoBtn?.addEventListener('touchend', handleTodoTap, { passive: false, capture: true });
-      doc.addEventListener('click', handleDocTap, true);
-    }
+    dialog.addEventListener('pointerup', handleDialogTap, true);
+    dialog.addEventListener('click', handleDialogTap, true);
+    dialog.addEventListener('touchend', handleDialogTap, { passive: false, capture: true });
+
+    detailBtn?.addEventListener('pointerdown', stopButtonDown, true);
+    todoBtn?.addEventListener('pointerdown', stopButtonDown, true);
+    detailBtn?.addEventListener('pointerup', handleDetailTap, true);
+    todoBtn?.addEventListener('pointerup', handleTodoTap, true);
+    detailBtn?.addEventListener('click', handleDetailTap, true);
+    todoBtn?.addEventListener('click', handleTodoTap, true);
+    detailBtn?.addEventListener('touchend', handleDetailTap, { passive: false, capture: true });
+    todoBtn?.addEventListener('touchend', handleTodoTap, { passive: false, capture: true });
 
     win.addEventListener('resize', () => {
       resetQuoteSegments();
