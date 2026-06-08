@@ -19,7 +19,7 @@
   const STYLE_ID = 'yukari-vn-status-style';
   const STORAGE_KEY = 'yukari-vn-status-position';
   const ICON_URL = 'https://files.catbox.moe/kdsisd.gif';
-  const VERSION = 'panel-split-20260608-r2';
+  const VERSION = 'panel-split-20260608-r3-clickfix';
 
   const fallbackData = {
     place: '万事屋',
@@ -397,6 +397,18 @@
       #${ROOT_ID} .seg-icon svg .fill-dot {
         fill: rgba(234,223,195,.55) !important;
         stroke: none !important;
+      }
+
+      #${ROOT_ID} .status-toggle,
+      #${ROOT_ID} .todo-toggle {
+        position: relative !important;
+        z-index: 130 !important;
+        -webkit-tap-highlight-color: transparent !important;
+      }
+
+      #${ROOT_ID} .seg-icon svg,
+      #${ROOT_ID} .seg-icon svg * {
+        pointer-events: none !important;
       }
 
       #${ROOT_ID} .seg-icon:hover svg,
@@ -1024,18 +1036,34 @@
       }
     }
 
+    let suppressNextPanelClick = 0;
+
+    function handlePanelButton(event, panelName) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleDetailPanel(panelName);
+    }
+
     function bindPanelButton(button, panelName) {
       if (!button) return;
+
+      // 手机端不能同时用 touchend + click 直接切换：一次触摸会先开再被补发 click 关掉。
+      // 用 pointerup 处理即时触发，再用时间戳吃掉随后产生的 click；不支持 PointerEvent 时保留 click 兜底。
+      if (win.PointerEvent) {
+        button.addEventListener('pointerup', event => {
+          suppressNextPanelClick = Date.now() + 450;
+          handlePanelButton(event, panelName);
+        });
+      }
+
       button.addEventListener('click', event => {
-        event.preventDefault();
-        event.stopPropagation();
-        toggleDetailPanel(panelName);
+        if (suppressNextPanelClick && Date.now() < suppressNextPanelClick) {
+          event.preventDefault();
+          event.stopPropagation();
+          return;
+        }
+        handlePanelButton(event, panelName);
       });
-      button.addEventListener('touchend', event => {
-        event.preventDefault();
-        event.stopPropagation();
-        toggleDetailPanel(panelName);
-      }, { passive: false });
     }
 
     bindPanelButton(statusToggle, 'status');
