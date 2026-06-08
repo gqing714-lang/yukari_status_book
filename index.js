@@ -396,6 +396,8 @@
       }
 
       #${ROOT_ID} .seg-icon:hover svg,
+      #${ROOT_ID}.detail-open .btn-detail svg,
+      #${ROOT_ID}.todo-open .btn-todo svg,
       #${ROOT_ID} .seg-icon.active svg {
         stroke: rgba(234,223,195,.95) !important;
       }
@@ -426,7 +428,8 @@
         box-shadow: 0 14px 28px rgba(0,0,0,.26) !important;
       }
 
-      #${ROOT_ID}.panel-open .panel-wrapper.open .detail-panel {
+      #${ROOT_ID}.panel-open.detail-open .pw-detail .detail-panel,
+      #${ROOT_ID}.panel-open.todo-open .pw-todo .detail-panel {
         opacity: 1 !important;
         transform: translateY(0) !important;
         clip-path: inset(0 0 0 0) !important;
@@ -1172,24 +1175,34 @@
     }
 
     let lastPanelTap = 0;
-    function closePanels(exceptPanel = null) {
-      [detailPanel, todoPanel].forEach(panel => {
-        if (panel && panel !== exceptPanel) panel.classList.remove('open');
-      });
-      if (exceptPanel !== detailPanel) detailBtn?.classList.remove('active');
-      if (exceptPanel !== todoPanel) todoBtn?.classList.remove('active');
+    function closePanels() {
+      root.classList.remove('detail-open', 'todo-open');
+      detailBtn?.classList.remove('active');
+      todoBtn?.classList.remove('active');
     }
 
-    function handlePanelTap(panel, button, event) {
+    function handleDetailTap(event) {
       const now = Date.now();
       if (now - lastPanelTap < 120) return;
       lastPanelTap = now;
       event.preventDefault();
       event.stopPropagation();
-      const willOpen = !panel.classList.contains('open');
-      closePanels(panel);
-      panel.classList.toggle('open', willOpen);
-      button.classList.toggle('active', willOpen);
+      const willOpen = !root.classList.contains('detail-open');
+      closePanels();
+      root.classList.toggle('detail-open', willOpen);
+      detailBtn?.classList.toggle('active', willOpen);
+    }
+
+    function handleTodoTap(event) {
+      const now = Date.now();
+      if (now - lastPanelTap < 120) return;
+      lastPanelTap = now;
+      event.preventDefault();
+      event.stopPropagation();
+      const willOpen = !root.classList.contains('todo-open');
+      closePanels();
+      root.classList.toggle('todo-open', willOpen);
+      todoBtn?.classList.toggle('active', willOpen);
     }
 
     function handleDocTap(event) {
@@ -1198,16 +1211,16 @@
 
     if ('PointerEvent' in win) {
       dialog.addEventListener('pointerup', handleDialogTap, true);
-      detailBtn?.addEventListener('pointerup', event => handlePanelTap(detailPanel, detailBtn, event), true);
-      todoBtn?.addEventListener('pointerup', event => handlePanelTap(todoPanel, todoBtn, event), true);
+      detailBtn?.addEventListener('pointerup', handleDetailTap, true);
+      todoBtn?.addEventListener('pointerup', handleTodoTap, true);
       doc.addEventListener('pointerup', handleDocTap, true);
     } else {
       dialog.addEventListener('click', handleDialogTap, true);
       dialog.addEventListener('touchend', handleDialogTap, { passive: false, capture: true });
-      detailBtn?.addEventListener('click', event => handlePanelTap(detailPanel, detailBtn, event), true);
-      detailBtn?.addEventListener('touchend', event => handlePanelTap(detailPanel, detailBtn, event), { passive: false, capture: true });
-      todoBtn?.addEventListener('click', event => handlePanelTap(todoPanel, todoBtn, event), true);
-      todoBtn?.addEventListener('touchend', event => handlePanelTap(todoPanel, todoBtn, event), { passive: false, capture: true });
+      detailBtn?.addEventListener('click', handleDetailTap, true);
+      detailBtn?.addEventListener('touchend', handleDetailTap, { passive: false, capture: true });
+      todoBtn?.addEventListener('click', handleTodoTap, true);
+      todoBtn?.addEventListener('touchend', handleTodoTap, { passive: false, capture: true });
       doc.addEventListener('click', handleDocTap, true);
     }
 
