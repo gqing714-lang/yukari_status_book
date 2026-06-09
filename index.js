@@ -98,6 +98,30 @@
     return '危险';
   }
 
+  function clampMoodValue(value) {
+    const n = Number(value);
+    if (Number.isNaN(n)) return 0;
+    return Math.max(0, Math.min(100, n));
+  }
+
+  function parseMoodValue(raw, fallback = 0) {
+    const text = safeText(raw);
+    if (!text) return clampMoodValue(fallback);
+
+    const ratio = text.match(/(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)/);
+    if (ratio) {
+      const current = Number(ratio[1]);
+      const total = Number(ratio[2]);
+      if (!Number.isNaN(current) && !Number.isNaN(total) && total !== 0) {
+        return clampMoodValue((current / total) * 100);
+      }
+    }
+
+    const number = text.match(/-?\d+(?:\.\d+)?/);
+    if (!number) return clampMoodValue(fallback);
+    return clampMoodValue(Number(number[0]));
+  }
+
   function latestStatusBlock(text) {
     const list = [...String(text ?? '').matchAll(/<status\b[^>]*>([\s\S]*?)<\/status>/gi)];
     return list.length ? (list[list.length - 1][1] || '') : '';
@@ -175,8 +199,8 @@
     const rawMoodValue = safeText(sections['心情值'][0]);
     const hasMoodValue = rawMoodValue !== '';
     const moodValue = hasMoodValue
-      ? Math.max(0, Math.min(100, Number(rawMoodValue.replace(/[^\d.-]/g, '')) || 0))
-      : fallbackData.moodValue;
+      ? parseMoodValue(rawMoodValue, fallbackData.moodValue)
+      : clampMoodValue(fallbackData.moodValue);
     const main = parseMain(sections['当前主线'].join('\n'));
     const quotes = parseQuotes(sections['台词'].join('\n'), moodValue);
 
@@ -561,7 +585,7 @@
       #${ROOT_ID} .mood-fill {
         display: block !important;
         height: 100% !important;
-        width: 100% !important;
+        width: var(--mood-width, 0%) !important;
         border-radius: inherit !important;
         background: linear-gradient(90deg, rgba(132,57,50,.92), rgba(156,132,82,.82)) !important;
       }
@@ -777,7 +801,7 @@
       #${ROOT_ID} .mood-row { display: flex !important; align-items: center !important; gap: 9px !important; }
       #${ROOT_ID} .mood-number { font-size: 11px !important; color: rgba(42,31,24,.40) !important; min-width: 22px !important; }
       #${ROOT_ID} .mood-bar { flex: 1 1 auto !important; height: 2px !important; background: rgba(42,31,24,.12) !important; border-radius: 0 !important; }
-      #${ROOT_ID} .mood-fill { display: block !important; height: 100% !important; background: linear-gradient(90deg, #8c3030, rgba(140,80,60,.45)) !important; border-radius: 0 !important; }
+      #${ROOT_ID} .mood-fill { display: block !important; height: 100% !important; width: var(--mood-width, 0%) !important; min-width: 0 !important; background: linear-gradient(90deg, #8c3030, rgba(140,80,60,.45)) !important; border-radius: 0 !important; }
 
       #${ROOT_ID} .todo-block { border-left-color: rgba(140,48,48,.35) !important; background: #e8dcc8 !important; }
       #${ROOT_ID} .todo-list { list-style: none !important; display: grid !important; gap: 5px !important; margin: 0 !important; padding: 0 !important; }
@@ -920,14 +944,23 @@
     setText(root, '.meta-date', data.date);
     setText(root, '.meta-time', data.time);
     setText(root, '.meta-place', data.place);
-    setText(root, '.mood-number', String(data.moodValue));
+    const moodValue = clampMoodValue(data.moodValue);
+    const moodWidth = moodValue + '%';
+    setText(root, '.mood-number', String(Math.round(moodValue)));
+    root.style.setProperty('--mood-width', moodWidth);
     setText(root, '.outfit', data.outfit);
     setText(root, '.action', data.action);
     setText(root, '.main-title', data.mainTitle);
     setText(root, '.main-summary', data.mainSummary);
 
-    const fill = root.querySelector('.mood-fill');
-    if (fill) fill.style.width = Math.max(0, Math.min(100, Number(data.moodValue) || 0)) + '%';
+    root.querySelectorAll('.mood-fill').forEach(fill => {
+      fill.style.setProperty('width', moodWidth, 'important');
+    });
+    root.querySelectorAll('.mood-row').forEach(row => {
+      row.setAttribute('aria-valuemin', '0');
+      row.setAttribute('aria-valuemax', '100');
+      row.setAttribute('aria-valuenow', String(Math.round(moodValue)));
+    });
 
     const list = root.querySelector('.todo-list');
     if (list) {
