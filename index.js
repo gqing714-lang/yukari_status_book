@@ -27,15 +27,12 @@
     date: '未知',
     time: '00:00',
     moodValue: 0,
-    moodLabel: '未知',
     outfit: '未知',
     action: '无',
     mainTitle: '无',
     mainSummary: '无',
     todos: ['无'],
-    quotes: [
-      { mood: '高兴', text: '欢迎光临' }
-    ]
+    quotes: ['欢迎光临']
   };
 
   const state = {
@@ -86,15 +83,6 @@
       .replace(/\{\/\/.*?\}/g, '')
       .replace(/[ \t]+$/gm, '')
       .trim();
-  }
-
-  function scoreToMood(score) {
-    const n = Number(score);
-    if (Number.isNaN(n)) return '平静';
-    if (n >= 65) return '高兴';
-    if (n >= 35) return '平静';
-    if (n >= 15) return '低落';
-    return '危险';
   }
 
   function clampMoodValue(value) {
@@ -175,40 +163,31 @@
     };
   }
 
-  function parseQuotes(text, moodValue) {
-    const lines = String(text ?? '').split('\n').map(v => v.trim()).filter(Boolean);
+  function parseQuotes(text) {
     const quotes = [];
 
-    for (const line of lines) {
-      const match = line.match(/^([^：:]{1,12})\s*[:：]\s*(.+)$/);
-      if (match) {
-        quotes.push({ mood: safeText(match[1]), text: safeText(match[2]) });
-      } else if (quotes.length) {
-        quotes[quotes.length - 1].text += '\n' + line;
-      }
-    }
+    String(text ?? '').split('\n').forEach(line => {
+      const value = safeText(line).replace(/^[-•◇◆]\s*/, '').trim();
+      if (value) quotes.push(value);
+    });
 
-    if (quotes.length) return quotes;
-    const mood = scoreToMood(moodValue);
-    return [{ mood, text: fallbackData.quotes[0].text }];
+    return quotes.length ? quotes : fallbackData.quotes;
   }
 
   function parseStatus(block) {
     const sections = splitSections(block);
     const rawMoodValue = safeText(sections['心情值'][0]);
-    const hasMoodValue = rawMoodValue !== '';
-    const moodValue = hasMoodValue
+    const moodValue = rawMoodValue
       ? parseMoodValue(rawMoodValue, fallbackData.moodValue)
       : clampMoodValue(fallbackData.moodValue);
     const main = parseMain(sections['当前主线'].join('\n'));
-    const quotes = parseQuotes(sections['台词'].join('\n'), moodValue);
+    const quotes = parseQuotes(sections['台词'].join('\n'));
 
     return {
       place: sections['地点'][0] || fallbackData.place,
       date: sections['日期'][0] || fallbackData.date,
       time: sections['时间'][0] || fallbackData.time,
       moodValue,
-      moodLabel: hasMoodValue ? scoreToMood(moodValue) : fallbackData.moodLabel,
       outfit: sections['穿着'].join('\n').trim() || fallbackData.outfit,
       action: sections['当前动作'].join('\n').trim() || fallbackData.action,
       mainTitle: main.mainTitle,
@@ -792,10 +771,9 @@
   }
 
   function quotePool() {
-    const mood = state.data.moodLabel || scoreToMood(state.data.moodValue);
-    const quotes = Array.isArray(state.data.quotes) ? state.data.quotes : fallbackData.quotes;
-    const matched = quotes.filter(q => q.mood && (q.mood.includes(mood) || mood.includes(q.mood)));
-    return matched.length ? matched : quotes;
+    return Array.isArray(state.data.quotes) && state.data.quotes.length
+      ? state.data.quotes
+      : fallbackData.quotes;
   }
 
   function getDialogTextMetrics(root) {
@@ -933,11 +911,9 @@
   function buildQuoteSegmentPool(root) {
     const segments = [];
 
-    quotePool().forEach(item => {
-      const pieces = splitQuoteText(root, item.text);
-      if (pieces.length) {
-        pieces.forEach(text => segments.push({ ...item, text }));
-      }
+    quotePool().forEach(text => {
+      const pieces = splitQuoteText(root, text);
+      if (pieces.length) segments.push(...pieces);
     });
 
     return segments.length ? segments : quotePool();
@@ -980,7 +956,7 @@
     const pool = quoteSegmentPool(root);
     if (!pool.length) return;
     const item = pool[state.quoteIndex % pool.length];
-    typeQuote(root, item.text);
+    typeQuote(root, item);
   }
 
   function nextQuote(root) {
