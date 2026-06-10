@@ -1190,18 +1190,10 @@
       mes.dataset?.isUser === 'true';
   }
 
-  function messageOrderOf(message, fallbackIndex) {
-    const keys = ['message_id', 'mesid', 'mes_id', 'id', 'index'];
-    for (const key of keys) {
-      const n = Number(message?.[key]);
-      if (!Number.isNaN(n)) return n;
-    }
-    return fallbackIndex;
-  }
 
   async function readLatestStatus() {
-    // 只读取“最新助手楼层”的状态栏，不再从旧楼层里继续倒找。
-    // 这样新回复正常输出 <status> 时，不会被第二楼或其他历史楼层抢走。
+    // 严格只读取最新 char 楼层的 <status>。
+    // 若最新 char 楼层没有 <status>，直接返回空，不再翻旧楼层兜底。
     try {
       const ctx = win.SillyTavern?.getContext?.() || window.SillyTavern?.getContext?.();
       const chat = ctx?.chat;
@@ -1214,41 +1206,14 @@
       }
     } catch (e) {}
 
+    // 原始 chat 不可用时，才从 DOM 取最后一个非 user_mes 的楼层。
+    // 这里不遍历旧楼层内容，只取最后一个 char 节点。
     try {
-      const mesNodes = [...doc.querySelectorAll('#chat .mes')].reverse();
-      for (const mes of mesNodes) {
-        if (isUserMesNode(mes)) continue;
-        const textNode = mes.querySelector?.('.mes_text') || mes;
+      const charNodes = [...doc.querySelectorAll('#chat .mes:not(.user_mes)')];
+      const latestChar = charNodes[charNodes.length - 1];
+      if (latestChar) {
+        const textNode = latestChar.querySelector?.('.mes_text') || latestChar;
         return latestStatusBlock(textNode.textContent || '');
-      }
-    } catch (e) {}
-
-    try {
-      const textNodes = [...doc.querySelectorAll('#chat .mes_text')].reverse();
-      for (const node of textNodes) {
-        if (isUserMesNode(node)) continue;
-        return latestStatusBlock(node.textContent || '');
-      }
-    } catch (e) {}
-
-    // 最后才读 getChatMessages。这个接口在不同环境里返回顺序可能不一致，
-    // 所以只在前两种稳定来源不可用时兜底，并尽量按楼层 id 取最新。
-    try {
-      const getMessages = win.getChatMessages || window.getChatMessages;
-      const getLastId = win.getLastMessageId || window.getLastMessageId;
-      if (typeof getMessages === 'function') {
-        const lastId = typeof getLastId === 'function' ? Number(getLastId()) : 9999;
-        const messages = await Promise.resolve(getMessages(`0-${lastId}`, { role: 'assistant', hide_state: 'unhidden', include_swipes: false }));
-        if (Array.isArray(messages) && messages.length) {
-          const candidates = messages
-            .map((message, index) => ({ message, order: messageOrderOf(message, index) }))
-            .filter(item => !isUserMessage(item.message));
-          if (candidates.length) {
-            candidates.sort((a, b) => a.order - b.order);
-            const latest = candidates[candidates.length - 1].message;
-            return latestStatusBlock(messageTextOf(latest));
-          }
-        }
       }
     } catch (e) {}
 
