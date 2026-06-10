@@ -46,7 +46,6 @@
     observer: null,
     typingToken: 0,
     quoteSegments: null,
-    visible: true
   };
 
   function getTargetDocs() {
@@ -389,36 +388,6 @@
         text-align: right !important;
       }
 
-      #${ROOT_ID} .arrow-btn {
-        all: initial !important;
-        width: 24px !important;
-        height: 24px !important;
-        display: flex !important;
-        align-items: center !important;
-        justify-content: center !important;
-        color: var(--cream-dim) !important;
-        cursor: pointer !important;
-        pointer-events: auto !important;
-        user-select: none !important;
-        -webkit-user-select: none !important;
-        touch-action: manipulation !important;
-        font-family: inherit !important;
-        justify-self: end !important;
-      }
-
-      #${ROOT_ID} .arrow-btn span {
-        display: block !important;
-        font-size: 13px !important;
-        line-height: 1 !important;
-        transform: rotate(-90deg) !important;
-        transition: transform .22s ease, color .22s ease !important;
-      }
-
-      #${ROOT_ID}.detail-open .arrow-btn span {
-        transform: rotate(0deg) !important;
-        color: var(--cream) !important;
-      }
-
       #${ROOT_ID} .dialog-box {
         position: absolute !important;
         left: var(--box-left) !important;
@@ -480,154 +449,6 @@
         margin-left: 6px !important;
         color: rgba(183, 161, 117, .76) !important;
         animation: ykrCursor 1.05s ease-in-out infinite !important;
-      }
-
-      #${ROOT_ID} .detail-float {
-        position: absolute !important;
-        left: var(--box-left) !important;
-        top: calc(var(--status-top) + var(--status-height) + 4px) !important;
-        width: var(--dialog-width) !important;
-        max-height: min(58vh, 360px) !important;
-        overflow: auto !important;
-        z-index: 50 !important;
-        pointer-events: none !important;
-        opacity: 0 !important;
-        transform: translateY(-10px) scaleY(.94) !important;
-        transform-origin: top center !important;
-        clip-path: inset(0 0 100% 0 round var(--radius)) !important;
-        transition:
-          opacity .18s ease,
-          transform .26s cubic-bezier(.2,.85,.2,1),
-          clip-path .28s cubic-bezier(.2,.85,.2,1) !important;
-        background:
-          linear-gradient(180deg, rgba(234, 224, 202, .98), rgba(218, 204, 175, .98)) !important;
-        border: var(--border) solid rgba(92, 76, 51, .28) !important;
-        border-radius: var(--radius) !important;
-        box-shadow:
-          0 16px 34px rgba(0,0,0,.36),
-          inset 0 1px 0 rgba(255,255,255,.34) !important;
-        color: #2f2823 !important;
-        padding: 10px 12px 11px !important;
-      }
-
-      #${ROOT_ID}.panel-open.detail-open .detail-float {
-        opacity: 1 !important;
-        transform: translateY(0) scaleY(1) !important;
-        clip-path: inset(0 0 0 0 round var(--radius)) !important;
-        pointer-events: auto !important;
-      }
-
-      #${ROOT_ID} .detail-grid {
-        display: grid !important;
-        grid-template-columns: 1fr !important;
-        gap: 7px !important;
-      }
-
-      #${ROOT_ID} .info-box {
-        min-width: 0 !important;
-        padding: 7px 8px !important;
-        border-radius: var(--inner-radius) !important;
-        background: rgba(255, 250, 236, .33) !important;
-        border: 1px solid rgba(58, 45, 34, .10) !important;
-      }
-
-      #${ROOT_ID} .info-box.wide {
-        grid-column: 1 / -1 !important;
-      }
-
-      #${ROOT_ID} .mood-box {
-        display: grid !important;
-        grid-template-columns: auto minmax(80px, 1fr) !important;
-        align-items: center !important;
-        column-gap: 10px !important;
-        background: rgba(255, 251, 241, .24) !important;
-      }
-
-      #${ROOT_ID} .mood-box .info-title {
-        margin-bottom: 0 !important;
-      }
-
-      #${ROOT_ID} .mood-box .info-text {
-        display: grid !important;
-        grid-template-columns: auto minmax(60px, 1fr) !important;
-        align-items: center !important;
-        gap: 9px !important;
-      }
-
-      #${ROOT_ID} .info-title {
-        margin-bottom: 4px !important;
-        font-size: 11px !important;
-        font-weight: 700 !important;
-        letter-spacing: .14em !important;
-        color: rgba(105, 50, 43, .82) !important;
-      }
-
-      #${ROOT_ID} .info-text {
-        font-size: 12px !important;
-        line-height: 1.55 !important;
-        color: rgba(43,31,28,.82) !important;
-        white-space: pre-wrap !important;
-      }
-
-      #${ROOT_ID} .mood-number {
-        font-size: 12px !important;
-        color: rgba(43,31,28,.72) !important;
-      }
-
-      #${ROOT_ID} .mood-bar {
-        height: 5px !important;
-        border-radius: 1px !important;
-        overflow: hidden !important;
-        background: rgba(56,42,36,.14) !important;
-        margin-top: 0 !important;
-      }
-
-      #${ROOT_ID} .mood-fill {
-        display: block !important;
-        height: 100% !important;
-        width: var(--mood-width, 0%) !important;
-        border-radius: inherit !important;
-        background: linear-gradient(90deg, rgba(132,57,50,.92), rgba(156,132,82,.82)) !important;
-      }
-
-      #${ROOT_ID} .divider {
-        grid-column: 1 / -1 !important;
-        height: 1px !important;
-        background: linear-gradient(90deg, transparent, rgba(96,58,42,.20), transparent) !important;
-        margin: 0 !important;
-      }
-
-      #${ROOT_ID} .todo-note {
-        background:
-          linear-gradient(180deg, rgba(242,225,184,.62), rgba(226,207,162,.50)) !important;
-        border-color: rgba(117, 87, 43, .18) !important;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.22) !important;
-      }
-
-      #${ROOT_ID} .todo-list {
-        margin: 0 !important;
-        padding: 0 !important;
-        list-style: none !important;
-        display: grid !important;
-        gap: 4px !important;
-      }
-
-      #${ROOT_ID} .todo-list li {
-        position: relative !important;
-        padding-left: 15px !important;
-      }
-
-      #${ROOT_ID} .todo-list li::before {
-        content: "◇" !important;
-        position: absolute !important;
-        left: 0 !important;
-        color: rgba(132,57,50,.62) !important;
-      }
-
-      #${ROOT_ID} .main-title {
-        font-weight: 700 !important;
-        color: rgba(58,34,29,.90) !important;
-        margin-bottom: 3px !important;
       }
 
       @keyframes ykrCursor {
@@ -736,9 +557,6 @@
         stroke: rgba(255,220,200,.95) !important;
       }
 
-      #${ROOT_ID} .detail-float {
-        display: none !important;
-      }
 
       #${ROOT_ID} .detail-panel {
         position: absolute !important;
@@ -1180,15 +998,6 @@
     return !!(message?.is_user || message?.role === 'user' || message?.from === 'user');
   }
 
-  function isUserMesNode(node) {
-    const mes = node?.closest?.('.mes') || node;
-    if (!mes?.classList) return false;
-    return mes.classList.contains('user_mes') ||
-      mes.classList.contains('is_user') ||
-      mes.classList.contains('user') ||
-      mes.getAttribute?.('is_user') === 'true' ||
-      mes.dataset?.isUser === 'true';
-  }
 
 
   async function readLatestStatus() {
@@ -1284,7 +1093,6 @@
 
     function clampPosition(left, top) {
       const rect = root.getBoundingClientRect();
-      const maxRightWidth = Math.min(520, Math.max(240, win.innerWidth - 96));
       return {
         // 只限制“立绘本体”留在屏幕内，不再把展开面板/对话框也算进拖拽边界。
         // 之前移动范围过小，就是因为把右侧 UI 总宽度也拿来 clamp 了。
