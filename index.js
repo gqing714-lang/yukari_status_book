@@ -1172,36 +1172,83 @@
     showCurrentQuote(root);
   }
 
+  function messageTextOf(message) {
+    return message?.mes ?? message?.message ?? message?.content ?? message?.text ?? '';
+  }
+
+  function isUserMessage(message) {
+    return !!(message?.is_user || message?.role === 'user' || message?.from === 'user');
+  }
+
+  function isUserMesNode(node) {
+    const mes = node?.closest?.('.mes') || node;
+    if (!mes?.classList) return false;
+    return mes.classList.contains('user_mes') ||
+      mes.classList.contains('is_user') ||
+      mes.classList.contains('user') ||
+      mes.getAttribute?.('is_user') === 'true' ||
+      mes.dataset?.isUser === 'true';
+  }
+
+  function messageOrderOf(message, fallbackIndex) {
+    const keys = ['message_id', 'mesid', 'mes_id', 'id', 'index'];
+    for (const key of keys) {
+      const n = Number(message?.[key]);
+      if (!Number.isNaN(n)) return n;
+    }
+    return fallbackIndex;
+  }
+
   async function readLatestStatus() {
+    // 只读取“最新助手楼层”的状态栏，不再从旧楼层里继续倒找。
+    // 这样新回复正常输出 <status> 时，不会被第二楼或其他历史楼层抢走。
     try {
-      if (typeof getChatMessages === 'function') {
-        const lastId = typeof getLastMessageId === 'function' ? Number(getLastMessageId()) : 9999;
-        const messages = await Promise.resolve(getChatMessages(`0-${lastId}`, { role: 'assistant', hide_state: 'unhidden', include_swipes: false }));
-        if (Array.isArray(messages)) {
-          for (let i = messages.length - 1; i >= 0; i--) {
-            const block = latestStatusBlock(messages[i]?.message);
-            if (block) return block;
+      const ctx = win.SillyTavern?.getContext?.() || window.SillyTavern?.getContext?.();
+      const chat = ctx?.chat;
+      if (Array.isArray(chat) && chat.length) {
+        for (let i = chat.length - 1; i >= 0; i--) {
+          const message = chat[i];
+          if (isUserMessage(message)) continue;
+          return latestStatusBlock(messageTextOf(message));
+        }
+      }
+    } catch (e) {}
+
+    try {
+      const mesNodes = [...doc.querySelectorAll('#chat .mes')].reverse();
+      for (const mes of mesNodes) {
+        if (isUserMesNode(mes)) continue;
+        const textNode = mes.querySelector?.('.mes_text') || mes;
+        return latestStatusBlock(textNode.textContent || '');
+      }
+    } catch (e) {}
+
+    try {
+      const textNodes = [...doc.querySelectorAll('#chat .mes_text')].reverse();
+      for (const node of textNodes) {
+        if (isUserMesNode(node)) continue;
+        return latestStatusBlock(node.textContent || '');
+      }
+    } catch (e) {}
+
+    // 最后才读 getChatMessages。这个接口在不同环境里返回顺序可能不一致，
+    // 所以只在前两种稳定来源不可用时兜底，并尽量按楼层 id 取最新。
+    try {
+      const getMessages = win.getChatMessages || window.getChatMessages;
+      const getLastId = win.getLastMessageId || window.getLastMessageId;
+      if (typeof getMessages === 'function') {
+        const lastId = typeof getLastId === 'function' ? Number(getLastId()) : 9999;
+        const messages = await Promise.resolve(getMessages(`0-${lastId}`, { role: 'assistant', hide_state: 'unhidden', include_swipes: false }));
+        if (Array.isArray(messages) && messages.length) {
+          const candidates = messages
+            .map((message, index) => ({ message, order: messageOrderOf(message, index) }))
+            .filter(item => !isUserMessage(item.message));
+          if (candidates.length) {
+            candidates.sort((a, b) => a.order - b.order);
+            const latest = candidates[candidates.length - 1].message;
+            return latestStatusBlock(messageTextOf(latest));
           }
         }
-      }
-    } catch (e) {}
-
-    try {
-      const chat = win.SillyTavern?.getContext?.()?.chat;
-      if (Array.isArray(chat)) {
-        for (let i = chat.length - 1; i >= 0; i--) {
-          if (chat[i]?.is_user) continue;
-          const block = latestStatusBlock(chat[i]?.mes ?? chat[i]?.message ?? '');
-          if (block) return block;
-        }
-      }
-    } catch (e) {}
-
-    try {
-      const nodes = [...doc.querySelectorAll('#chat .mes_text')].reverse();
-      for (const node of nodes) {
-        const block = latestStatusBlock(node.textContent || '');
-        if (block) return block;
       }
     } catch (e) {}
 
